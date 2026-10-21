@@ -1,0 +1,207 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Dandrum\PageBuilder\Concerns;
+
+use Dandrum\PageBuilder\Support\BlockRegistry;
+use Dandrum\PageBuilder\Support\PageBuilderDocument;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
+
+/**
+ * Turns any Livewire component into a block-based content editor for one
+ * JSON-backed column of a bound model. The host component must:
+ *
+ * - call `$this->initializePageBuilder()` from its own `mount()`, after the
+ *   bound model has been assigned to a property;
+ * - implement `getPageBuilderModel()`, returning that bound model;
+ * - implement `uploadPageBuilderImage()`, storing the file however the host
+ *   app wants (S3, local disk, …) and returning the public URL/path.
+ *
+ * Overriding `getPageBuilderStorageField()` and `deletePageBuilderImage()` is
+ * optional.
+ */
+trait HasPageBuilder
+{
+    use WithFileUploads;
+
+    /** @var array<int, array{id: string, type: string, data: array<string, mixed>}> */
+    public array $pageBuilderBlocks = [];
+
+    /** @var array<string, TemporaryUploadedFile> keyed by block id */
+    public array $pageBuilderUploads = [];
+
+    public function initializePageBuilder(): void
+    {
+        $raw = data_get($this->getPageBuilderModel(), $this->getPageBuilderStorageField());
+
+        $document = is_array($raw)
+            ? PageBuilderDocument::fromArray($raw)
+            : PageBuilderDocument::fromJson($raw);
+
+        $this->pageBuilderBlocks = $document->blocks;
+    }
+
+    /**
+     * @return array<int, array{key: string, label: string}>
+     */
+    public function pageBuilderBlockTypes(): array
+    {
+        return collect($this->pageBuilderRegistry()->all())
+            ->map(fn ($block) => ['key' => $block::key(), 'label' => $block->label()])
+            ->values()
+            ->all();
+    }
+
+    public function addPageBuilderBlock(string $type): void
+    {
+        $block = $this->pageBuilderRegistry()->get($type);
+
+        $this->pageBuilderBlocks[] = [
+            'id' => (string) Str::uuid(),
+            'type' => $type,
+            'data' => $block->defaultData(),
+        ];
+    }
+
+    public function duplicatePageBuilderBlock(string $blockId): void
+    {
+        $index = $this->findPageBuilderBlockIndex($blockId);
+
+        if ($index === null) {
+            return;
+        }
+
+        $copy = $this->pageBuilderBlocks[$index];
+        $copy['id'] = (string) Str::uuid();
+
+        array_splice($this->pageBuilderBlocks, $index + 1, 0, [$copy]);
+    }
+
+    public function removePageBuilderBlock(string $blockId): void
+    {
+        $index = $this->findPageBuilderBlockIndex($blockId);
+
+        if ($index === null) {
+            return;
+        }
+
+        $data = $this->pageBuilderBlocks[$index]['data'] ?? [];
+        $imageUrl = $data['url'] ?? $data['imageUrl'] ?? null;
+
+        if (filled($imageUrl)) {
+            $this->deletePageBuilderImage($imageUrl);
+        }
+
+        unset($this->pageBuilderBlocks[$index]);
+        $this->pageBuilderBlocks = array_values($this->pageBuilderBlocks);
+    }
+
+    /**
+     * @param  array<int, string>  $orderedIds
+     */
+    public function reorderPageBuilderBlocks(array $orderedIds): void
+    {
+        $blocksById = collect($this->pageBuilderBlocks)->keyBy('id');
+
+        $this->pageBuilderBlocks = collect($orderedIds)
+            ->map(fn (string $id) => $blocksById->get($id))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    public function updatedPageBuilderUploads(mixed $value, string $key): void
+    {
+        if (! $value instanceof TemporaryUploadedFile) {
+            return;
+        }
+
+        $this->uploadPageBuilderBlockImage($key, $value);
+
+        unset($this->pageBuilderUploads[$key]);
+    }
+
+    public function uploadPageBuilderBlockImage(string $blockId, TemporaryUploadedFile $file): void
+    {
+        $index = $this->findPageBuilderBlockIndex($blockId);
+
+        if ($index === null) {
+            return;
+        }
+
+        $url = $this->uploadPageBuilderImage($file);
+        $field = $this->pageBuilderBlocks[$index]['type'] === 'image_text' ? 'imageUrl' : 'url';
+
+        $this->pageBuilderBlocks[$index]['data'][$field] = $url;
+    }
+
+    /**
+     * Validates every block's `data` against its block type's `rules()`.
+     * Call this from the host component's own submit/save method before
+     * persisting `getPageBuilderDocumentJson()`/`getPageBuilderDocumentArray()`.
+     */
+    public function validatePageBuilderBlocks(): void
+    {
+        $registry = $this->pageBuilderRegistry();
+        $rules = [];
+
+        foreach ($this->pageBuilderBlocks as $i => $block) {
+            if (! $registry->has($block['type'])) {
+                continue;
+            }
+
+            foreach ($registry->get($block['type'])->rules() as $field => $fieldRules) {
+                $rules["pageBuilderBlocks.{$i}.data.{$field}"] = $fieldRules;
+            }
+        }
+
+        $this->validate($rules);
+    }
+
+    /**
+     * @return array{version: int, blocks: array<int, array<string, mixed>>}
+     */
+    public function getPageBuilderDocumentArray(): array
+    {
+        return (new PageBuilderDocument(1, $this->pageBuilderBlocks))->toArray();
+    }
+
+    public function getPageBuilderDocumentJson(): string
+    {
+        return (new PageBuilderDocument(1, $this->pageBuilderBlocks))->toJson();
+    }
+
+    protected function getPageBuilderStorageField(): string
+    {
+        return 'content';
+    }
+
+    public function deletePageBuilderImage(string $url): void
+    {
+        // No-op by default — override to clean up the file in the host app's storage.
+    }
+
+    abstract protected function getPageBuilderModel(): Model;
+
+    abstract public function uploadPageBuilderImage(TemporaryUploadedFile $file): string;
+
+    private function pageBuilderRegistry(): BlockRegistry
+    {
+        return app(BlockRegistry::class);
+    }
+
+    private function findPageBuilderBlockIndex(string $blockId): ?int
+    {
+        foreach ($this->pageBuilderBlocks as $i => $block) {
+            if ($block['id'] === $blockId) {
+                return $i;
+            }
+        }
+
+        return null;
+    }
+}

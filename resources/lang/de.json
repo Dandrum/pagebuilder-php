@@ -1,0 +1,20 @@
+{
+    "Paragraph": "Absatz",
+    "Heading": "Überschrift",
+    "Image": "Bild",
+    "Image + Text": "Bild + Text",
+    "Add block": "Block hinzufügen",
+    "Duplicate": "Duplizieren",
+    "Delete": "Löschen",
+    "Delete this block?": "Diesen Block löschen?",
+    "Drag to reorder": "Ziehen zum Umsortieren",
+    "Uploading...": "Wird hochgeladen...",
+    "Left": "Links",
+    "Center": "Zentriert",
+    "Right": "Rechts",
+    "Justify": "Blocksatz",
+    "Heading text": "Überschriftstext",
+    "Alt text (required)": "Alt-Text (Pflichtfeld)",
+    "Caption (optional)": "Bildunterschrift (optional)",
+    "Image position": "Bildposition"
+}

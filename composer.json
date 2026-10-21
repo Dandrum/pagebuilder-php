@@ -1,0 +1,40 @@
+{
+    "name": "dandrum/livewire-pagebuilder",
+    "description": "Laravel Livewire block-based content builder (paragraph/heading/image/image+text blocks stored as JSON)",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Dandrum\\PageBuilder\\": "src"
+        }
+    },
+    "authors": [
+        {
+            "name": "Daniel",
+            "email": "daniel.schmidt89@freenet.de"
+        }
+    ],
+    "scripts": {
+        "format": "vendor/bin/pint"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Dandrum\\PageBuilder\\Providers\\PageBuilderServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.2|^8.3",
+        "illuminate/support": "^11|^12",
+        "livewire/livewire": "^3|dev-main"
+    },
+    "require-dev": {
+        "laravel/pint": "^1"
+    }
+}
