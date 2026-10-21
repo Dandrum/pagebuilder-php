@@ -33,10 +33,10 @@ Everything is exercised through `composer.json`'s own `require`/`require-dev`.
   config/views/JSON translations — the same pattern as the sibling `dandrum/datatable` package's
   `DataTableServiceProvider`.
 
-See `.claude/rules/architecture.md` for the full block lifecycle (add/duplicate/remove/reorder/
-upload/validate/save) and how to add a block type. See `.claude/rules/laravel.md` for code style
-and the Blade/Alpine/Trix/SortableJS conventions used in the views. See `.claude/rules/testing.md`
-for the current (pre-test-suite) state of testing this package.
+See `.claude/rules/architecture.md` for the full block lifecycle (insert/duplicate/remove/
+move-up/move-down/upload/validate/save) and how to add a block type. See `.claude/rules/laravel.md`
+for code style and the Blade/Alpine/Trix conventions used in the views. See
+`.claude/rules/testing.md` for the current (pre-test-suite) state of testing this package.
 
 ## Development Setup
 
@@ -71,9 +71,9 @@ for f in $(find src config -name "*.php"); do php -l "$f"; done
   — mirrors the translation convention of this package's primary consumer, `dandrum/DotaLan`.
 - No sidequests: a change to one block type or view should not ripple into unrelated block types
   unless the task actually requires it.
-- The host app is expected to already load **Alpine.js**, **Trix**, and **SortableJS** in its own
-  asset bundle — this package ships no JS/CSS build step of its own and must not grow one just to
-  avoid that requirement.
+- The host app is expected to already load **Alpine.js** and **Trix** in its own asset bundle —
+  this package ships no JS/CSS build step of its own and must not grow one just to avoid that
+  requirement.
 
 ## Package Consumers
 

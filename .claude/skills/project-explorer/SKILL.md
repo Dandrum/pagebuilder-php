@@ -56,8 +56,9 @@ grep -rln "ImageTextBlock\|image_text\|image-text" src resources config
   belong in the config, not the registry class itself.
 - **Change publishable config/views/translations, or the `pagebuilder::` view/component
   namespace**: `src/Providers/PageBuilderServiceProvider.php`.
-- **Change the public editor/renderer markup shared by all block types** (toolbar, drag handles,
-  duplicate/delete buttons, the render loop): `resources/views/components/editor.blade.php` and
+- **Change the public editor/renderer markup shared by all block types** (per-block label/icon
+  controls, the inline "+ Type" insert rows, the render loop): `resources/views/components/
+  editor.blade.php` + `resources/views/components/insert-row.blade.php`, and
   `resources/views/render.blade.php` respectively.
 - **Any new user-facing string**: goes through `__('...')`, keyed by the literal English sentence,
   added to both `resources/lang/en.json` and `resources/lang/de.json` — search both before adding

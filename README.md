@@ -25,8 +25,8 @@ As a VCS repository (not published on Packagist), same as `dandrum/datatable`:
 composer require dandrum/livewire-pagebuilder:dev-main
 ```
 
-The host app must already load **Alpine.js**, **Trix** (`trix` + `trix/dist/trix.css`) and
-**SortableJS** in its own asset bundle — the package ships no JS/CSS assets of its own.
+The host app must already load **Alpine.js** and **Trix** (`trix` + `trix/dist/trix.css`) in its
+own asset bundle — the package ships no JS/CSS assets of its own.
 
 ## Usage
 

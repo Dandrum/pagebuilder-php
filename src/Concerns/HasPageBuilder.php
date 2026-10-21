@@ -58,13 +58,55 @@ trait HasPageBuilder
 
     public function addPageBuilderBlock(string $type): void
     {
-        $block = $this->pageBuilderRegistry()->get($type);
+        $lastBlock = collect($this->pageBuilderBlocks)->last();
 
-        $this->pageBuilderBlocks[] = [
+        $this->insertPageBuilderBlock($type, $lastBlock['id'] ?? '');
+    }
+
+    /**
+     * Inserts a new block of `$type` right after the block identified by
+     * `$afterBlockId` — or at the very start of the list when `$afterBlockId`
+     * is `''` (or no longer matches any block).
+     */
+    public function insertPageBuilderBlock(string $type, string $afterBlockId = ''): void
+    {
+        $blockType = $this->pageBuilderRegistry()->get($type);
+
+        $newBlock = [
             'id' => (string) Str::uuid(),
             'type' => $type,
-            'data' => $block->defaultData(),
+            'data' => $blockType->defaultData(),
         ];
+
+        $index = $afterBlockId === '' ? null : $this->findPageBuilderBlockIndex($afterBlockId);
+
+        if ($index === null) {
+            array_unshift($this->pageBuilderBlocks, $newBlock);
+        } else {
+            array_splice($this->pageBuilderBlocks, $index + 1, 0, [$newBlock]);
+        }
+    }
+
+    public function movePageBuilderBlockUp(string $blockId): void
+    {
+        $index = $this->findPageBuilderBlockIndex($blockId);
+
+        if ($index === null || $index === 0) {
+            return;
+        }
+
+        $this->swapPageBuilderBlocks($index, $index - 1);
+    }
+
+    public function movePageBuilderBlockDown(string $blockId): void
+    {
+        $index = $this->findPageBuilderBlockIndex($blockId);
+
+        if ($index === null || $index === array_key_last($this->pageBuilderBlocks)) {
+            return;
+        }
+
+        $this->swapPageBuilderBlocks($index, $index + 1);
     }
 
     public function duplicatePageBuilderBlock(string $blockId): void
@@ -101,6 +143,10 @@ trait HasPageBuilder
     }
 
     /**
+     * Not called by the shipped `<x-pagebuilder::editor>` (which reorders via
+     * `movePageBuilderBlockUp()`/`movePageBuilderBlockDown()` instead), but kept as a public API
+     * for a host that wires up its own drag-and-drop reordering.
+     *
      * @param  array<int, string>  $orderedIds
      */
     public function reorderPageBuilderBlocks(array $orderedIds): void
@@ -211,5 +257,11 @@ trait HasPageBuilder
         }
 
         return null;
+    }
+
+    private function swapPageBuilderBlocks(int $a, int $b): void
+    {
+        [$this->pageBuilderBlocks[$a], $this->pageBuilderBlocks[$b]] =
+            [$this->pageBuilderBlocks[$b], $this->pageBuilderBlocks[$a]];
     }
 }

@@ -42,16 +42,26 @@ explicit instead of automatic:
 
 ## Block lifecycle
 
-- **Add** (`addPageBuilderBlock(string $type)`): looks up the type in the registry, appends a new
-  block with a fresh UUID and `defaultData()`.
+- **Insert** (`insertPageBuilderBlock(string $type, string $afterBlockId = '')`): looks up the type
+  in the registry, builds a new block with a fresh UUID and `defaultData()`, and splices it in
+  right after `$afterBlockId` — or at the very start of the list when `$afterBlockId` is `''` (the
+  default) or no longer matches any block. The editor renders one of these insert points *between
+  every pair of blocks* (and one before the first block), each offering every registered block type
+  as a small "+ Label" button — not a single "add block" menu at the end. `addPageBuilderBlock(string
+  $type)` still exists as a plain "append at the end" convenience wrapper around this (it resolves
+  the current last block's id and calls `insertPageBuilderBlock` with it).
 - **Duplicate** (`duplicatePageBuilderBlock(string $blockId)`): deep-copies the block array,
   assigns a new UUID, splices it immediately after the original.
 - **Remove** (`removePageBuilderBlock(string $blockId)`): before removing, if the block's `data`
   has a `url` or `imageUrl`, calls `deletePageBuilderImage()` (no-op by default — override in the
   host to actually clean up storage, e.g. S3).
-- **Reorder** (`reorderPageBuilderBlocks(array $orderedIds)`): called from the editor's SortableJS
-  `onEnd` handler with the DOM's new id order; re-keys `$pageBuilderBlocks` by that order via a
-  `collect()->keyBy('id')` lookup — unknown ids are silently dropped, not errored.
+- **Reorder** (`movePageBuilderBlockUp(string $blockId)` / `movePageBuilderBlockDown(string
+  $blockId)`): swaps the block with its immediate neighbor; a no-op at either end of the list. The
+  shipped editor has no drag-and-drop — each block shows explicit move-up/move-down icon buttons
+  instead, which avoids the interaction conflict of a drag handle that also has to contain clickable
+  action buttons. `reorderPageBuilderBlocks(array $orderedIds)` (re-keys `$pageBuilderBlocks` to
+  match an arbitrary id order) still exists on the trait and is fully functional, just not called by
+  `<x-pagebuilder::editor>` — it's there for a host that wants to wire up its own drag-and-drop.
 - **Image upload** (`updatedPageBuilderUploads($value, $key)`): `$pageBuilderUploads` is an
   **array** property (`pageBuilderUploads.{blockId}`), not a single scalar — this is deliberate so
   multiple image/image_text blocks can each have their own `<input type="file"
