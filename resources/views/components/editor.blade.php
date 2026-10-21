@@ -43,18 +43,47 @@
         @endforeach
     </div>
 
-    <div x-data="{ open: false }" class="relative">
-        <button type="button" x-on:click="open = ! open" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+    <div
+        x-data="{
+            open: false,
+            menuStyle: '',
+            toggle() {
+                this.open = ! this.open;
+                if (this.open) {
+                    this.$nextTick(() => {
+                        const rect = this.$refs.pagebuilderAddButton.getBoundingClientRect();
+                        this.menuStyle = `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX}px;`;
+                    });
+                }
+            },
+        }"
+    >
+        <button
+            type="button"
+            x-ref="pagebuilderAddButton"
+            x-on:click="toggle()"
+            class="cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
             {{ __('Add block') }}
         </button>
 
-        <div x-show="open" x-on:click.outside="open = false" x-cloak class="absolute z-10 mt-1 w-48 rounded-md border border-slate-300 bg-white py-1 shadow-lg">
+        {{-- Teleported to <body> so an ancestor's `overflow:hidden` (e.g. the host form's card
+             wrapper) can't clip this menu; position is computed from the button's own rect since
+             teleporting moves it out of the normal document flow relative to that button. --}}
+        <div
+            x-show="open"
+            x-on:click.outside="open = false"
+            x-teleport="body"
+            x-cloak
+            :style="menuStyle"
+            class="fixed z-50 w-48 rounded-md border border-slate-300 bg-white py-1 shadow-lg"
+        >
             @foreach($blockTypes as $type)
                 <button
                     type="button"
                     wire:click="addPageBuilderBlock('{{ $type['key'] }}')"
                     x-on:click="open = false"
-                    class="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                    class="block w-full cursor-pointer px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
                 >
                     {{ $type['label'] }}
                 </button>
