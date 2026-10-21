@@ -1,6 +1,13 @@
 @props(['block', 'index'])
 
 <div class="space-y-2">
+    <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="rounded-md border-slate-300 text-sm">
+        <option value="left">{{ __('Left') }}</option>
+        <option value="center">{{ __('Center') }}</option>
+        <option value="right">{{ __('Right') }}</option>
+        <option value="justify">{{ __('Justify') }}</option>
+    </select>
+
     <div
         x-data="{
             content: @entangle('pageBuilderBlocks.'.$index.'.data.html'),
@@ -27,11 +34,4 @@
     @error('pageBuilderBlocks.'.$index.'.data.html')
         <span class="text-sm text-red-600">{{ $message }}</span>
     @enderror
-
-    <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="rounded-md border-slate-300 text-sm">
-        <option value="left">{{ __('Left') }}</option>
-        <option value="center">{{ __('Center') }}</option>
-        <option value="right">{{ __('Right') }}</option>
-        <option value="justify">{{ __('Justify') }}</option>
-    </select>
 </div>

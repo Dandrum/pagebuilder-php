@@ -2,6 +2,11 @@
 
 <div class="grid gap-4 md:grid-cols-2">
     <div class="space-y-2">
+        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.imagePosition" class="rounded-md border-slate-300 text-sm">
+            <option value="left">{{ __('Image position') }}: {{ __('Left') }}</option>
+            <option value="right">{{ __('Image position') }}: {{ __('Right') }}</option>
+        </select>
+
         @if(filled($block['data']['imageUrl'] ?? null))
             <img src="{{ $block['data']['imageUrl'] }}" alt="" class="max-h-48 rounded-md border border-slate-200" />
         @endif
@@ -14,14 +19,16 @@
         @error('pageBuilderUploads.'.$block['id'])
             <span class="text-sm text-red-600">{{ $message }}</span>
         @enderror
-
-        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.imagePosition" class="rounded-md border-slate-300 text-sm">
-            <option value="left">{{ __('Image position') }}: {{ __('Left') }}</option>
-            <option value="right">{{ __('Image position') }}: {{ __('Right') }}</option>
-        </select>
     </div>
 
     <div class="space-y-2">
+        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="rounded-md border-slate-300 text-sm">
+            <option value="left">{{ __('Left') }}</option>
+            <option value="center">{{ __('Center') }}</option>
+            <option value="right">{{ __('Right') }}</option>
+            <option value="justify">{{ __('Justify') }}</option>
+        </select>
+
         <div
             x-data="{
                 content: @entangle('pageBuilderBlocks.'.$index.'.data.html'),
@@ -48,12 +55,5 @@
         @error('pageBuilderBlocks.'.$index.'.data.html')
             <span class="text-sm text-red-600">{{ $message }}</span>
         @enderror
-
-        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="rounded-md border-slate-300 text-sm">
-            <option value="left">{{ __('Left') }}</option>
-            <option value="center">{{ __('Center') }}</option>
-            <option value="right">{{ __('Right') }}</option>
-            <option value="justify">{{ __('Justify') }}</option>
-        </select>
     </div>
 </div>
