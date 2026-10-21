@@ -159,6 +159,14 @@ trait HasPageBuilder
             }
         }
 
+        // No blocks (or none needing validation) is a legitimate state — e.g. a brand-new
+        // document, or a locale nobody has added content to yet. Livewire's validate() throws
+        // MissingRulesException on *any* empty rules array, treating it as a forgotten rules()
+        // method rather than "nothing to check here", so this must short-circuit instead.
+        if ($rules === []) {
+            return;
+        }
+
         $this->validate($rules);
     }
 
