@@ -43,47 +43,32 @@
         @endforeach
     </div>
 
-    <div
-        x-data="{
-            open: false,
-            menuStyle: '',
-            toggle() {
-                this.open = ! this.open;
-                if (this.open) {
-                    this.$nextTick(() => {
-                        const rect = this.$refs.pagebuilderAddButton.getBoundingClientRect();
-                        this.menuStyle = `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX}px;`;
-                    });
-                }
-            },
-        }"
-    >
+    <div x-data="{ open: false }">
         <button
             type="button"
-            x-ref="pagebuilderAddButton"
-            x-on:click="toggle()"
+            x-on:click="open = ! open"
             class="cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
             {{ __('Add block') }}
         </button>
 
-        {{-- Teleported to <body> so an ancestor's `overflow:hidden` (e.g. the host form's card
-             wrapper) can't clip this menu; position is computed from the button's own rect since
-             teleporting moves it out of the normal document flow relative to that button. --}}
+        {{-- Expands inline below the button instead of floating as an absolutely-positioned
+             overlay, so it can never get clipped by an ancestor's `overflow:hidden` (e.g. the
+             host form's rounded-corner card wrapper) — a floating/teleported menu was tried and
+             reverted: teleporting it outside the Livewire component's DOM subtree broke
+             `wire:click` resolution for every button inside it. --}}
         <div
             x-show="open"
             x-on:click.outside="open = false"
-            x-teleport="body"
             x-cloak
-            :style="menuStyle"
-            class="fixed z-50 w-48 rounded-md border border-slate-300 bg-white py-1 shadow-lg"
+            class="mt-2 grid grid-cols-2 gap-1 rounded-md border border-slate-300 bg-white p-2 shadow-sm sm:grid-cols-3"
         >
             @foreach($blockTypes as $type)
                 <button
                     type="button"
                     wire:click="addPageBuilderBlock('{{ $type['key'] }}')"
                     x-on:click="open = false"
-                    class="block w-full cursor-pointer px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                    class="cursor-pointer rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
                 >
                     {{ $type['label'] }}
                 </button>
