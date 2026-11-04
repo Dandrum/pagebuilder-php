@@ -71,6 +71,9 @@ grep -rln "ImageTextBlock\|image_text\|image-text" src resources config
   `src/Support/TextHelper.php` (plain-text helpers).
 - `resources/views/components/rich-text.blade.php` - the Trix editor + per-block toolbar shared by
   `paragraph` and `image-text`.
+- `src/Contracts/ImageBearingBlock.php` + `src/Blocks/Concerns/NormalizesImageData.php` - what `image` and
+  `image_text` share; `components/image-field.blade.php` / `image-meta.blade.php` (editor image part and the alt/caption/credit row),
+  `blocks/render/partials/image.blade.php` (render side, honours `image.render_view`).
 - `resources/css/pagebuilder-{editor,content}.css` - shipped CSS (`--pb-*` variables).
 - `tests/` - Testbench suite, see `.claude/rules/testing.md`.
 

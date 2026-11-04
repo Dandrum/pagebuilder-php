@@ -67,6 +67,10 @@ explicit instead of automatic:
   picker answers the editor's `pagebuilder-pick-image` event. Unknown block ids are ignored; the media id
   is validated with `pageBuilderMediaIdRules()`; failure -> error on `...data.media_id`, nothing
   assigned. Success sets `media_id`, clears alt/caption/credit and drops a pending upload.
+  Pick, upload, clear and the image validation rules apply to every block implementing
+  `Contracts\ImageBearingBlock` (`image`, `image_text`); `imageUrlKey()` (`url` / `imageUrl`) names the URL key. A
+  deferred upload stored by `storePendingPageBuilderUploads()` only resets the image keys, so an image + text
+  block keeps its html/position/align.
 - **Image upload** (`updatedPageBuilderUploads($value, $key)`): `$pageBuilderUploads` is an **array**
   property (`pageBuilderUploads.{blockId}`), one entry per block - don't collapse it to a single
   scalar. The hook validates the file with `pageBuilderUploadRules()` first (invalid files are

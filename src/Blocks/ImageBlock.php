@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Dandrum\PageBuilder\Blocks;
 
+use Dandrum\PageBuilder\Blocks\Concerns\NormalizesImageData;
 use Dandrum\PageBuilder\Contracts\BlockType;
 use Dandrum\PageBuilder\Contracts\ContentAwareBlock;
+use Dandrum\PageBuilder\Contracts\ImageBearingBlock;
 use Dandrum\PageBuilder\Contracts\ImageMediaResolver;
 
 /**
@@ -14,8 +16,10 @@ use Dandrum\PageBuilder\Contracts\ImageMediaResolver;
  * The source-dependent "required" rules live in the HasPageBuilder trait, since they depend on
  * the component's options and on pending uploads.
  */
-final class ImageBlock implements BlockType, ContentAwareBlock
+final class ImageBlock implements BlockType, ContentAwareBlock, ImageBearingBlock
 {
+    use NormalizesImageData;
+
     public static function key(): string
     {
         return 'image';
@@ -24,6 +28,11 @@ final class ImageBlock implements BlockType, ContentAwareBlock
     public function label(): string
     {
         return __('Image');
+    }
+
+    public function imageUrlKey(): string
+    {
+        return 'url';
     }
 
     public function defaultData(): array
@@ -58,46 +67,14 @@ final class ImageBlock implements BlockType, ContentAwareBlock
 
     public function normalize(array $data): ?array
     {
-        $normalized = [];
+        $normalized = $this->normalizeImageData($data, 'url');
 
-        $mediaId = $data['media_id'] ?? null;
-
-        if (is_int($mediaId) || (is_string($mediaId) && trim($mediaId) !== '')) {
-            $normalized['media_id'] = is_numeric($mediaId) ? (int) $mediaId : trim((string) $mediaId);
-        }
-
-        $url = is_string($data['url'] ?? null) ? trim($data['url']) : '';
-
-        if ($url !== '' && $this->isSafeUrl($url)) {
-            $normalized['url'] = $url;
-        }
-
-        if ($normalized === []) {
-            return null;
-        }
-
-        foreach (['alt', 'caption', 'credit'] as $key) {
-            if (is_string($data[$key] ?? null) && trim($data[$key]) !== '') {
-                $normalized[$key] = trim($data[$key]);
-            }
-        }
-
-        return $normalized;
+        return $normalized === [] ? null : $normalized;
     }
 
     public function plainText(array $data): string
     {
         // Images contribute nothing to word counts / reading time.
         return '';
-    }
-
-    private function isSafeUrl(string $url): bool
-    {
-        if (preg_match('~^https?://~i', $url) === 1) {
-            return true;
-        }
-
-        // Relative (same-origin) paths only; "//host" and any other scheme are rejected.
-        return preg_match('~^/(?!/)~', $url) === 1 || (! str_contains($url, ':') && ! str_starts_with($url, '//'));
     }
 }

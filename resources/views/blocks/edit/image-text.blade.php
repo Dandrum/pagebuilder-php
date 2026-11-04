@@ -1,27 +1,22 @@
 @props(['block', 'index', 'context' => []])
 
-<div class="pb-block-body pb-columns">
-    <div class="pb-stack">
-        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.imagePosition" class="pb-select" aria-label="{{ __('Image position') }}">
-            <option value="left">{{ __('Image position') }}: {{ __('Left') }}</option>
-            <option value="right">{{ __('Image position') }}: {{ __('Right') }}</option>
-        </select>
+@php
+    $position = ($block['data']['imagePosition'] ?? 'left') === 'right' ? 'right' : 'left';
+    $positionName = 'pb-position-'.$block['id'];
+@endphp
 
-        @if(filled($block['data']['imageUrl'] ?? null))
-            <img src="{{ $block['data']['imageUrl'] }}" alt="" class="pb-preview" />
-        @endif
+<div class="pb-block-body">
+    <div class="pb-block-options">
+        <fieldset class="pb-segmented">
+            <legend class="pb-visually-hidden">{{ __('Image position') }}</legend>
+            @foreach(['left' => __('Image left'), 'right' => __('Image right')] as $value => $text)
+                <label class="pb-segmented-option">
+                    <input type="radio" name="{{ $positionName }}" value="{{ $value }}" wire:model.live="pageBuilderBlocks.{{ $index }}.data.imagePosition" class="pb-segmented-input" />
+                    <span>{{ $text }}</span>
+                </label>
+            @endforeach
+        </fieldset>
 
-        <div wire:loading.flex wire:target="pageBuilderUploads.{{ $block['id'] }}" class="pb-loading">
-            {{ __('Uploading...') }}
-        </div>
-
-        <input type="file" accept="image/*" wire:model="pageBuilderUploads.{{ $block['id'] }}" class="pb-file" aria-label="{{ __('Image') }}" />
-        @error('pageBuilderUploads.'.$block['id'])
-            <span class="pb-error">{{ $message }}</span>
-        @enderror
-    </div>
-
-    <div class="pb-stack">
         @if(! empty($context['alignment']))
             <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="pb-select" aria-label="{{ __('Alignment') }}">
                 <option value="left">{{ __('Left') }}</option>
@@ -30,11 +25,23 @@
                 <option value="justify">{{ __('Justify') }}</option>
             </select>
         @endif
+    </div>
 
-        @include('pagebuilder::components.rich-text', ['blockId' => $block['id'], 'label' => __('Image + Text :n', ['n' => $index + 1])])
+    @error('pageBuilderBlocks.'.$index.'.data.imagePosition')
+        <span class="pb-error">{{ $message }}</span>
+    @enderror
 
-        @error('pageBuilderBlocks.'.$index.'.data.html')
-            <span class="pb-error">{{ $message }}</span>
-        @enderror
+    <div class="pb-image-text-edit {{ $position === 'right' ? 'pb-image-text-edit--right' : '' }}">
+        <div class="pb-image-text-edit-image">
+            @include('pagebuilder::components.image-field', ['block' => $block, 'index' => $index, 'context' => $context, 'urlKey' => 'imageUrl'])
+        </div>
+
+        <div class="pb-image-text-edit-text">
+            @include('pagebuilder::components.rich-text', ['blockId' => $block['id'], 'label' => __('Image + Text :n', ['n' => $index + 1])])
+
+            @error('pageBuilderBlocks.'.$index.'.data.html')
+                <span class="pb-error">{{ $message }}</span>
+            @enderror
+        </div>
     </div>
 </div>

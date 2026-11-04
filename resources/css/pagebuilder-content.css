@@ -14,6 +14,9 @@
     --pb-link: #2563eb;
     --pb-caption-color: #64748b;
     --pb-content-radius: 6px;
+    --pb-heading-font: var(--pb-content-font);
+    --pb-quote-border: #cbd5e1;
+    --pb-quote-color: inherit;
 
     font-family: var(--pb-content-font);
     color: var(--pb-content-color);
@@ -24,12 +27,45 @@
     margin: 0 0 var(--pb-content-gap);
 }
 
-.pb-prose :where(p, div, ul, ol) {
+.pb-prose :where(p, div, ul, ol, h1, h2, h3, h4, h5, h6, blockquote) {
     margin: 0;
 }
 
-.pb-prose :where(p, div, ul, ol) + :where(p, div, ul, ol) {
+.pb-prose :where(p, div, ul, ol, h1, h2, h3, h4, h5, h6, blockquote) + :where(p, div, ul, ol, h1, h2, h3, h4, h5, h6, blockquote) {
     margin-top: var(--pb-content-gap);
+}
+
+.pb-prose :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--pb-heading-font);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.pb-prose :where(h1) {
+    font-size: 2em;
+}
+
+.pb-prose :where(h2) {
+    font-size: 1.6em;
+}
+
+.pb-prose :where(h3) {
+    font-size: 1.3em;
+}
+
+.pb-prose :where(h4) {
+    font-size: 1.15em;
+}
+
+.pb-prose :where(h5, h6) {
+    font-size: 1em;
+}
+
+.pb-prose :where(blockquote) {
+    padding-left: 1rem;
+    border-left: 4px solid var(--pb-quote-border);
+    color: var(--pb-quote-color);
+    font-style: italic;
 }
 
 .pb-prose :where(ul) {
@@ -72,24 +108,37 @@
     font-size: 0.875rem;
 }
 
+/* Image + text: image beside the text, stacked below 40rem. */
+
 .pb-block--image-text {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: var(--pb-content-gap);
 }
 
-.pb-block--image-text > * {
-    flex: 1 1 16rem;
+.pb-block--image-text .pb-figure {
+    margin: 0;
 }
 
-.pb-block--image-text :where(img) {
-    display: block;
-    width: 100%;
-    border-radius: var(--pb-content-radius);
-}
+@media (min-width: 40rem) {
+    .pb-block--image-text {
+        flex-direction: row;
+        align-items: flex-start;
+    }
 
-.pb-block--image-right {
-    flex-direction: row-reverse;
+    .pb-block--image-text > .pb-image-text-media {
+        flex: 0 0 40%;
+        min-width: 0;
+    }
+
+    .pb-block--image-text > .pb-image-text-body {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .pb-block--image-right {
+        flex-direction: row-reverse;
+    }
 }
 
 .pb-align-left {

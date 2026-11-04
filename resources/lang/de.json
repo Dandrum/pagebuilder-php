@@ -53,5 +53,12 @@
     "A paragraph may be at most :max characters long.": "Ein Absatz darf höchstens :max Zeichen lang sein.",
     "At most :max blocks are allowed.": "Es sind höchstens :max Blöcke erlaubt.",
     "This block type is not available.": "Dieser Blocktyp ist nicht verfügbar.",
-    "The image could not be uploaded.": "Das Bild konnte nicht hochgeladen werden."
+    "The image could not be uploaded.": "Das Bild konnte nicht hochgeladen werden.",
+    "Text formatting": "Textformatierung",
+    "Heading :n": "Überschrift :n",
+    "Quote": "Zitat",
+    "Image left": "Bild links",
+    "Image right": "Bild rechts",
+    "Upload an image or choose one from the library": "Bild hochladen oder aus der Mediathek wählen",
+    "JPG, PNG · landscape recommended": "JPG, PNG · Querformat empfohlen"
 }

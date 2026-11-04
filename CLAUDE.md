@@ -71,7 +71,7 @@ for f in $(find src config -name "*.php"); do php -l "$f"; done
   — mirrors the translation convention of this package's primary consumer, `dandrum/DotaLan`.
 - No sidequests: a change to one block type or view should not ripple into unrelated block types
   unless the task actually requires it.
-- Alpine comes with Livewire; the host must load **Trix** in its own asset bundle. The package ships
+- Alpine comes with Livewire; the host must load **Trix** (the heading2-6 block attributes are registered by `rich-text.blade.php` itself) in its own asset bundle. The package ships
   no JS and no build step, only plain CSS files (`resources/css/pagebuilder-*.css`, `--pb-*`
   custom properties) the host imports.
 

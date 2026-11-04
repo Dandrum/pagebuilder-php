@@ -28,6 +28,14 @@ final class PurifierHtmlSanitizerTest extends TestCase
             'div' => ['<div>a</div>'],
             'br' => ['<div>a<br>b</div>'],
             'umlauts' => ['<p>Größe ÄÖÜ äöü ß</p>'],
+            'h1' => ['<h1>a</h1>'],
+            'h2' => ['<h2>a</h2>'],
+            'h3' => ['<h3>a</h3>'],
+            'h4' => ['<h4>a</h4>'],
+            'h5' => ['<h5>a</h5>'],
+            'h6' => ['<h6>a</h6>'],
+            'blockquote' => ['<blockquote>a</blockquote>'],
+            'heading with formatting' => ['<h2>a <strong>b</strong> <a href="https://example.com" rel="nofollow">c</a></h2>'],
         ];
     }
 
@@ -64,7 +72,14 @@ final class PurifierHtmlSanitizerTest extends TestCase
             'entity obfuscated javascript' => ['<p><a href="&#106;avascript:alert(1)">x</a></p>', 'avascript'],
             'img' => ['<p>ok</p><img src="x" onerror="alert(1)">', '<img'],
             'iframe' => ['<iframe src="https://evil.example"></iframe><p>ok</p>', 'iframe'],
-            'heading' => ['<h1>big</h1>', '<h1'],
+            'heading handler' => ['<h2 onclick="alert(1)">big</h2>', 'onclick'],
+            'heading script' => ['<h3>big<script>alert(1)</script></h3>', 'script'],
+            'heading style attribute' => ['<h1 style="color:red">big</h1>', 'style'],
+            'heading img' => ['<h4><img src="x" onerror="alert(1)">big</h4>', '<img'],
+            'blockquote handler' => ['<blockquote onmouseover="alert(1)">q</blockquote>', 'onmouseover'],
+            'blockquote script' => ['<blockquote>q<script>alert(1)</script></blockquote>', 'script'],
+            'blockquote cite javascript' => ['<blockquote cite="javascript:alert(1)">q</blockquote>', 'javascript'],
+            'heading javascript link' => ['<h2><a href="javascript:alert(1)">x</a></h2>', 'javascript'],
             'style tag' => ['<style>body{display:none}</style><p>ok</p>', 'style'],
         ];
     }
@@ -86,6 +101,18 @@ final class PurifierHtmlSanitizerTest extends TestCase
     {
         $this->assertSame('', $this->sanitizer()->sanitize(''));
         $this->assertSame('', $this->sanitizer()->sanitize("  \n"));
+    }
+
+    public function test_trix_quote_markup_is_kept(): void
+    {
+        $html = '<blockquote><div>Ein Zitat</div></blockquote>';
+
+        $this->assertSame($html, $this->sanitizer()->sanitize($html));
+    }
+
+    public function test_empty_headings_and_quotes_are_removed(): void
+    {
+        $this->assertSame('', $this->sanitizer()->sanitize('<h2></h2><blockquote></blockquote>'));
     }
 
     public function test_empty_elements_are_removed(): void

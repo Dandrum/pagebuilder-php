@@ -38,8 +38,8 @@ return [
      * document is normalized (see PageBuilderDocument::normalized()).
      */
     'sanitizer' => [
-        // HTMLPurifier "HTML.Allowed" syntax. Trix emits <div>, migrated content may use <p>.
-        'allowed' => 'p,div,br,strong,em,a[href],ul,ol,li',
+        // HTMLPurifier "HTML.Allowed" syntax. Trix emits <div>, <h1>-<h6> (see rich-text.blade.php) and <blockquote>; migrated content may use <p>.
+        'allowed' => 'p,div,br,strong,em,a[href],ul,ol,li,h1,h2,h3,h4,h5,h6,blockquote',
         'schemes' => ['http', 'https', 'mailto'],
         'nofollow' => true,
         // null => storage_path('framework/cache/pagebuilder-purifier'); false => no definition cache.
@@ -47,7 +47,7 @@ return [
     ],
 
     /*
-     * Image block behaviour.
+     * Image behaviour, shared by the image and the image + text block.
      */
     'image' => [
         // 'url': the block stores `data.url`. 'media': it stores `data.media_id`, resolved via `resolver`.
@@ -61,7 +61,7 @@ return [
         'picker' => false,
         // Subset of alt|caption|credit that is required together with a new upload.
         'upload_required' => ['alt'],
-        // Blade view used by <x-pagebuilder::render> for image blocks (receives `data`, `block`, `media`).
+        // Blade view used by <x-pagebuilder::render> for image blocks and for the image side of image + text blocks (receives `data`, `block`, `media`).
         'render_view' => null,
         // Text shown when neither the picker nor an upload is available.
         'notice' => null,

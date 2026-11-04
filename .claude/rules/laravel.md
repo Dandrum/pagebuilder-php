@@ -42,7 +42,7 @@ package has no `package.json` or build step. The package does ship plain CSS fil
 (`resources/css/pagebuilder-editor.css`, `pagebuilder-content.css`) that the host imports.
 
 - Rich text (`components/rich-text.blade.php`, used by `paragraph` and `image-text`): one
-  `<trix-toolbar>` per block with only bold, italic, link and bullet/number list, attachments blocked
+  `<trix-toolbar>` per block with bold, italic, headings H1-H6, link, bullet/number list and quote (inline SVG/text buttons, no Trix icon classes), attachments blocked. Trix only knows `heading1`: the component's `ensureTrix()` (Alpine `x-init`, before the first `loadHTML`) adds `heading2`..`heading6` to `Trix.config.blockAttributes` - no package JS file
   (`trix-file-accept.prevent`). **No `@entangle`**: after a reorder an index-bound Alpine component
   would write into another block. Instead every `trix-change` (debounced 250 ms) looks the block up by
   id (`$wire.pageBuilderBlocks.findIndex(b => b.id === id)`) and does a deferred

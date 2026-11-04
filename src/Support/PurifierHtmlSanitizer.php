@@ -31,7 +31,7 @@ final class PurifierHtmlSanitizer implements HtmlSanitizer
         $config = HTMLPurifier_Config::createDefault();
         $config->set('Core.Encoding', 'UTF-8');
         $config->set('HTML.Doctype', 'HTML 4.01 Transitional');
-        $config->set('HTML.Allowed', (string) config('pagebuilder.sanitizer.allowed', 'p,div,br,strong,em,a[href],ul,ol,li'));
+        $config->set('HTML.Allowed', (string) config('pagebuilder.sanitizer.allowed', 'p,div,br,strong,em,a[href],ul,ol,li,h1,h2,h3,h4,h5,h6,blockquote'));
         $config->set('URI.AllowedSchemes', array_fill_keys((array) config('pagebuilder.sanitizer.schemes', ['http', 'https', 'mailto']), true));
         $config->set('HTML.Nofollow', (bool) config('pagebuilder.sanitizer.nofollow', true));
         $config->set('AutoFormat.RemoveEmpty', true);

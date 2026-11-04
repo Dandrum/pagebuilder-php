@@ -14,7 +14,7 @@ final class TextHelper
      */
     public static function htmlToText(string $html): string
     {
-        $spaced = preg_replace('~(</p>|</div>|</li>|<br\s*/?>)~i', '$1 ', $html) ?? $html;
+        $spaced = preg_replace('~(</p>|</div>|</li>|</h[1-6]>|</blockquote>|<br\s*/?>)~i', '$1 ', $html) ?? $html;
         $text = html_entity_decode(strip_tags($spaced), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         return trim(preg_replace('/[\s\x{00A0}]+/u', ' ', $text) ?? $text);

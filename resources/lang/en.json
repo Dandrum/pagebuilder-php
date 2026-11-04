@@ -53,5 +53,12 @@
     "A paragraph may be at most :max characters long.": "A paragraph may be at most :max characters long.",
     "At most :max blocks are allowed.": "At most :max blocks are allowed.",
     "This block type is not available.": "This block type is not available.",
-    "The image could not be uploaded.": "The image could not be uploaded."
+    "The image could not be uploaded.": "The image could not be uploaded.",
+    "Text formatting": "Text formatting",
+    "Heading :n": "Heading :n",
+    "Quote": "Quote",
+    "Image left": "Image left",
+    "Image right": "Image right",
+    "Upload an image or choose one from the library": "Upload an image or choose one from the library",
+    "JPG, PNG · landscape recommended": "JPG, PNG · landscape recommended"
 }

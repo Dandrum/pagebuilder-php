@@ -113,14 +113,14 @@ redeclaring them on `.pagebuilder` (editor) or `.pb-content` (output):
 | `max_blocks` | `200` | Validation cap for the number of blocks |
 | `max_html_length` | `20000` | Validation cap for one paragraph's HTML |
 | `alignment` | `true` | `false`: no align selects, the renderer ignores `align` |
-| `sanitizer.allowed` | `p,div,br,strong,em,a[href],ul,ol,li` | HTMLPurifier whitelist |
+| `sanitizer.allowed` | `p,div,br,strong,em,a[href],ul,ol,li,h1,h2,h3,h4,h5,h6,blockquote` | HTMLPurifier whitelist (headings and quotes come from the Trix toolbar) |
 | `sanitizer.schemes` / `nofollow` / `cache_path` | `http,https,mailto` / `true` / `null` | URI schemes, `rel=nofollow`, definition cache (`false` = none) |
-| `image.source` | `url` | `url` stores `data.url`; `media` stores `data.media_id` |
+| `image.source` | `url` | `url` stores `data.url` (`data.imageUrl` for image + text); `media` stores `data.media_id`. All `image.*` options apply to both image-bearing blocks |
 | `image.resolver` | `null` | `ImageMediaResolver` class, required for `media` |
 | `image.upload` | `immediate` | `immediate`, `deferred` (stored on save) or `off` |
 | `image.picker` | `false` | Show "Choose from library" |
 | `image.upload_required` | `['alt']` | Subset of `alt`, `caption`, `credit` required with a new upload |
-| `image.render_view` | `null` | View used by `<x-pagebuilder::render>` for image blocks |
+| `image.render_view` | `null` | View used by `<x-pagebuilder::render>` for image blocks and the image side of image + text blocks (receives `data`, `block`, `media`) |
 | `image.notice` | `null` | Text shown when neither picker nor upload is available |
 
 Override `pageBuilderImageOptions()` on the component to change these per component.
@@ -144,6 +144,25 @@ Override `pageBuilderImageOptions()` on the component to change these per compon
 4. `pageBuilderRules()` / `pageBuilderMessages()` return rules without validating, so a host merges
    them into its own `validate()` call.
 
+## Rich text (Trix) toolbar
+
+Paragraph and image + text blocks share one Trix toolbar: bold, italic, headings H1-H6, link, bullet and
+numbered list, quote. Trix only knows `heading1` natively, so `components/rich-text.blade.php` registers
+`heading2`..`heading6` on `Trix.config.blockAttributes` from an Alpine `x-init` before the HTML is loaded
+(no JS file, no build step in the package - the host only loads Trix). Headings and quotes are stored as
+`<h1>`-`<h6>` and `<blockquote>`; keep them in `sanitizer.allowed` if you override that list, and the
+rendered `.pb-prose` styles them (`--pb-heading-font`, `--pb-quote-border`, `--pb-quote-color`).
+The standalone `heading` block is still shipped but not needed any more - leave it out of `blocks`.
+
+## Image + text block
+
+`image_text` is an image-bearing block (`Contracts\ImageBearingBlock`, like `image`) plus a rich text and
+`imagePosition` (`left`|`right`, switchable in the editor). It uses the same `image.*` options, picker and
+upload events (`pagebuilder-pick-image` / `pagebuilder-image-picked` carry the block id for both types), the
+same deferred upload and `upload_required` metadata, and its `media_id` is part of
+`PageBuilderDocument::mediaIds()`. Its text counts in `plainText()`. The render view puts the image beside
+the text (stacked below 40rem); `image.render_view` renders the image side.
+
 ## Sanitizing
 
 Paragraph / image+text HTML is sanitized with HTMLPurifier (`ezyang/htmlpurifier`, a hard
@@ -163,7 +182,8 @@ the stored HTML as-is, so always store normalized documents.
         { "id": "uuid", "type": "paragraph", "data": { "html": "<p>...</p>", "align": "left" } },
         { "id": "uuid", "type": "image", "data": { "media_id": 12, "caption": "optional override" } },
         { "id": "uuid", "type": "image", "data": { "url": "...", "alt": "...", "caption": "..." } },
-        { "id": "uuid", "type": "image_text", "data": { "imageUrl": "...", "imagePosition": "left", "html": "...", "align": "left" } }
+        { "id": "uuid", "type": "image_text", "data": { "imageUrl": "...", "alt": "...", "imagePosition": "left|right", "html": "...", "align": "left" } },
+        { "id": "uuid", "type": "image_text", "data": { "media_id": 12, "caption": "optional override", "imagePosition": "right", "html": "..." } }
     ]
 }
 ```

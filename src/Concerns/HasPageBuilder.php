@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dandrum\PageBuilder\Concerns;
 
 use Closure;
-use Dandrum\PageBuilder\Blocks\ImageBlock;
+use Dandrum\PageBuilder\Contracts\ImageBearingBlock;
 use Dandrum\PageBuilder\Contracts\ImageMediaResolver;
 use Dandrum\PageBuilder\Support\BlockRegistry;
 use Dandrum\PageBuilder\Support\PageBuilderDocument;
@@ -224,10 +224,10 @@ trait HasPageBuilder
         }
 
         $index = $this->findPageBuilderBlockIndex($key);
-        $type = $index === null ? null : ($this->pageBuilderBlocks[$index]['type'] ?? null);
+        $urlKey = $index === null ? null : $this->pageBuilderImageUrlKey($index);
         $mode = $this->pageBuilderImageOptions()['upload'] ?? 'immediate';
 
-        if (! in_array($type, ['image', 'image_text'], true) || $mode === 'off') {
+        if ($urlKey === null || $mode === 'off') {
             unset($this->pageBuilderUploads[$key]);
 
             return;
@@ -245,10 +245,10 @@ trait HasPageBuilder
             throw $e;
         }
 
-        if ($type === 'image' && $mode === 'deferred') {
+        if ($mode === 'deferred') {
             // Kept in $pageBuilderUploads until the host calls storePendingPageBuilderUploads().
             $this->pageBuilderBlocks[$index]['data']['media_id'] = null;
-            $this->pageBuilderBlocks[$index]['data']['url'] = '';
+            $this->pageBuilderBlocks[$index]['data'][$urlKey] = '';
 
             return;
         }
@@ -269,9 +269,7 @@ trait HasPageBuilder
             return;
         }
 
-        if ($this->pageBuilderBlocks[$index]['type'] === 'image_text') {
-            $this->pageBuilderBlocks[$index]['data']['imageUrl'] = $this->uploadPageBuilderImage($file);
-
+        if ($this->pageBuilderImageUrlKey($index) === null) {
             return;
         }
 
@@ -282,15 +280,19 @@ trait HasPageBuilder
 
     /**
      * Host hook: store the uploaded file and return the data keys to merge into the image block
-     * (`['media_id' => …]` or `['url' => …]`). `$data` is the block's current data (alt, caption,
-     * credit as typed by the user). The default delegates to `uploadPageBuilderImage()`.
+     * (`['media_id' => …]`, or the URL key: `url` for image, `imageUrl` for image + text). `$data` is
+     * the block's current data (alt, caption, credit as typed by the user). The default delegates to
+     * `uploadPageBuilderImage()`.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public function storePageBuilderUpload(string $blockId, TemporaryUploadedFile $file, array $data): array
     {
-        return ['url' => $this->uploadPageBuilderImage($file)];
+        $index = $this->findPageBuilderBlockIndex($blockId);
+        $urlKey = $index === null ? null : $this->pageBuilderImageUrlKey($index);
+
+        return [($urlKey ?? 'url') => $this->uploadPageBuilderImage($file)];
     }
 
     public function hasPendingPageBuilderUploads(): bool
@@ -304,8 +306,6 @@ trait HasPageBuilder
      */
     public function storePendingPageBuilderUploads(): void
     {
-        $registry = $this->pageBuilderRegistry();
-
         foreach ($this->pendingPageBuilderUploads() as $blockId => $file) {
             $index = $this->findPageBuilderBlockIndex((string) $blockId);
 
@@ -319,8 +319,11 @@ trait HasPageBuilder
                 $this->pageBuilderBlocks[$index]['data'] ?? [],
             );
 
+            // The image part is reset (alt/caption/credit went into the stored media); other keys
+            // of the block (an image + text block's html, position, align) stay.
             $this->pageBuilderBlocks[$index]['data'] = array_replace(
-                $registry->get('image')->defaultData(),
+                $this->pageBuilderBlocks[$index]['data'] ?? [],
+                $this->emptyPageBuilderImageData($this->pageBuilderImageUrlKey($index) ?? 'url'),
                 $stored,
             );
         }
@@ -336,7 +339,9 @@ trait HasPageBuilder
     {
         $index = $this->findPageBuilderBlockIndex($blockId);
 
-        if ($index === null || ($this->pageBuilderBlocks[$index]['type'] ?? null) !== 'image') {
+        $urlKey = $index === null ? null : $this->pageBuilderImageUrlKey($index);
+
+        if ($index === null || $urlKey === null) {
             return;
         }
 
@@ -365,30 +370,28 @@ trait HasPageBuilder
 
         unset($this->pageBuilderUploads[$blockId]);
 
-        $data = $this->pageBuilderBlocks[$index]['data'];
-        $data['media_id'] = is_numeric($mediaId) ? (int) $mediaId : $mediaId;
-        $data['url'] = '';
-        $data['alt'] = '';
-        $data['caption'] = '';
-        $data['credit'] = '';
-
-        $this->pageBuilderBlocks[$index]['data'] = $data;
+        $this->pageBuilderBlocks[$index]['data'] = array_replace(
+            $this->pageBuilderBlocks[$index]['data'],
+            $this->emptyPageBuilderImageData($urlKey),
+            ['media_id' => is_numeric($mediaId) ? (int) $mediaId : $mediaId],
+        );
     }
 
     /**
-     * Removes the picked/uploaded/URL image from an image block, keeping the block itself.
+     * Removes the picked/uploaded/URL image from an image or image + text block, keeping the block itself.
      */
     public function clearPageBuilderImage(string $blockId): void
     {
         $index = $this->findPageBuilderBlockIndex($blockId);
+        $urlKey = $index === null ? null : $this->pageBuilderImageUrlKey($index);
 
-        if ($index === null || ($this->pageBuilderBlocks[$index]['type'] ?? null) !== 'image') {
+        if ($index === null || $urlKey === null) {
             return;
         }
 
         $this->pageBuilderBlocks[$index]['data'] = array_replace(
             $this->pageBuilderBlocks[$index]['data'],
-            ['media_id' => null, 'url' => '', 'alt' => '', 'caption' => '', 'credit' => ''],
+            $this->emptyPageBuilderImageData($urlKey),
         );
 
         unset($this->pageBuilderUploads[$blockId]);
@@ -485,7 +488,7 @@ trait HasPageBuilder
                 $rules["pageBuilderBlocks.{$i}.data.{$field}"] = $fieldRules;
             }
 
-            if (! $blockType instanceof ImageBlock) {
+            if (! $blockType instanceof ImageBearingBlock) {
                 continue;
             }
 
@@ -506,7 +509,7 @@ trait HasPageBuilder
                 continue;
             }
 
-            $rules[$prefix.'url'] = ['required', 'string'];
+            $rules[$prefix.$blockType->imageUrlKey()] = ['required', 'string'];
             $rules[$prefix.'alt'] = ['required', 'string', 'max:255'];
         }
 
@@ -524,6 +527,7 @@ trait HasPageBuilder
             'pageBuilderBlocks.*.data.html.max' => __('A paragraph may be at most :max characters long.'),
             'pageBuilderBlocks.*.data.media_id.required' => __('Please choose or upload an image.'),
             'pageBuilderBlocks.*.data.url.required' => __('Please choose or upload an image.'),
+            'pageBuilderBlocks.*.data.imageUrl.required' => __('Please choose or upload an image.'),
             'pageBuilderBlocks.*.data.alt.required' => __('Alt text is missing.'),
             'pageBuilderBlocks.*.data.caption.required' => __('Caption is missing.'),
             'pageBuilderBlocks.*.data.credit.required' => __('Photographer or source is missing.'),
@@ -578,7 +582,7 @@ trait HasPageBuilder
             foreach ($this->pageBuilderBlocks as $block) {
                 $mediaId = $block['data']['media_id'] ?? null;
 
-                if (($block['type'] ?? null) !== 'image' || $mediaId === null || $mediaId === '') {
+                if ($mediaId === null || $mediaId === '' || ! $this->isPageBuilderImageBlock($block)) {
                     continue;
                 }
 
@@ -662,12 +666,49 @@ trait HasPageBuilder
 
             $index = $this->findPageBuilderBlockIndex((string) $blockId);
 
-            if ($index !== null && ($this->pageBuilderBlocks[$index]['type'] ?? null) === 'image') {
+            if ($index !== null && $this->pageBuilderImageUrlKey($index) !== null) {
                 $pending[(string) $blockId] = $file;
             }
         }
 
         return $pending;
+    }
+
+    /**
+     * The URL data key of the block at `$index` when it is an image-bearing block
+     * (image, image + text), otherwise null.
+     */
+    private function pageBuilderImageUrlKey(int $index): ?string
+    {
+        $type = $this->pageBuilderBlocks[$index]['type'] ?? null;
+
+        if (! is_string($type) || ! $this->pageBuilderRegistry()->has($type)) {
+            return null;
+        }
+
+        $blockType = $this->pageBuilderRegistry()->get($type);
+
+        return $blockType instanceof ImageBearingBlock ? $blockType->imageUrlKey() : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $block
+     */
+    private function isPageBuilderImageBlock(array $block): bool
+    {
+        $type = $block['type'] ?? null;
+
+        return is_string($type)
+            && $this->pageBuilderRegistry()->has($type)
+            && $this->pageBuilderRegistry()->get($type) instanceof ImageBearingBlock;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function emptyPageBuilderImageData(string $urlKey): array
+    {
+        return ['media_id' => null, $urlKey => '', 'alt' => '', 'caption' => '', 'credit' => ''];
     }
 
     private function findPageBuilderBlockIndex(string $blockId): ?int

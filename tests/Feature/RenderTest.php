@@ -195,7 +195,7 @@ final class RenderTest extends TestCase
         $this->assertStringContainsString('aria-label="Insert Paragraph at the start"', $editor);
         $this->assertStringContainsString('<trix-toolbar id="pb-'.$id.'-toolbar"', $editor);
         $this->assertStringNotContainsString('@entangle', $editor);
-        $this->assertStringNotContainsString('data-trix-attribute="heading1"', $editor);
+        $this->assertStringContainsString('data-trix-attribute="heading1"', $editor);
         $this->assertStringContainsString('wire:model.live="pageBuilderBlocks.0.data.align"', $editor);
     }
 
