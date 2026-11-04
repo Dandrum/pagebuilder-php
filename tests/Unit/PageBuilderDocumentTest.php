@@ -77,6 +77,19 @@ final class PageBuilderDocumentTest extends TestCase
         $this->assertSame(['html' => '<p>Hi</p>', 'align' => 'left'], $doc->blocks[0]['data']);
     }
 
+    public function test_paragraph_align_keeps_valid_values_and_resets_tampered_ones(): void
+    {
+        foreach (['left', 'center', 'right', 'justify'] as $align) {
+            $doc = (new PageBuilderDocument(1, [$this->block(self::A, 'paragraph', ['html' => '<p>x</p>', 'align' => $align])]))->normalized();
+            $this->assertSame($align, $doc->blocks[0]['data']['align']);
+        }
+
+        foreach (['CENTER', 'middle', 5, null, ['center']] as $bad) {
+            $doc = (new PageBuilderDocument(1, [$this->block(self::A, 'paragraph', ['html' => '<p>x</p>', 'align' => $bad])]))->normalized();
+            $this->assertSame('left', $doc->blocks[0]['data']['align']);
+        }
+    }
+
     /**
      * @return array<string, array{0: string}>
      */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dandrum\PageBuilder\Tests\Feature;
 
 use Dandrum\PageBuilder\Contracts\ImageMediaResolver;
+use Dandrum\PageBuilder\Support\PageBuilderDocument;
 use Dandrum\PageBuilder\Tests\Fixtures\ArrayMediaResolver;
 use Dandrum\PageBuilder\Tests\Fixtures\EditorHost;
 use Dandrum\PageBuilder\Tests\TestCase;
@@ -196,7 +197,42 @@ final class RenderTest extends TestCase
         $this->assertStringContainsString('<trix-toolbar id="pb-'.$id.'-toolbar"', $editor);
         $this->assertStringNotContainsString('@entangle', $editor);
         $this->assertStringContainsString('data-trix-attribute="heading1"', $editor);
-        $this->assertStringContainsString('wire:model.live="pageBuilderBlocks.0.data.align"', $editor);
+        $this->assertStringContainsString('pb-align-tools', $editor);
+        $this->assertStringContainsString('aria-label="Align left"', $editor);
+        $this->assertStringContainsString('aria-label="Align center"', $editor);
+        $this->assertStringContainsString('aria-label="Align right"', $editor);
+        $this->assertStringNotContainsString('<select', $editor);
+        $this->assertStringContainsString('textAlign: align()', $editor);
+    }
+
+    public function test_the_image_text_editor_has_the_alignment_buttons(): void
+    {
+        $editor = Blade::render('<x-pagebuilder::editor :blocks="$blocks" :block-types="[]" />', [
+            'blocks' => [['id' => '11111111-1111-4111-8111-111111111111', 'type' => 'image_text', 'data' => ['html' => '', 'align' => 'right']]],
+        ]);
+
+        $this->assertStringContainsString('pb-align-tools', $editor);
+        $this->assertStringContainsString('aria-label="Align center"', $editor);
+        $this->assertStringContainsString('textAlign: align()', $editor);
+        $this->assertStringNotContainsString('<select', $editor);
+    }
+
+    public function test_the_text_part_of_image_text_gets_the_alignment_class(): void
+    {
+        $html = $this->render(['blocks' => [
+            ['id' => 'a', 'type' => 'image_text', 'data' => ['imageUrl' => 'https://example.com/a.jpg', 'html' => '<p>x</p>', 'align' => 'right']],
+        ]]);
+
+        $this->assertStringContainsString('pb-image-text-body pb-prose pb-align-right', $html);
+    }
+
+    public function test_a_tampered_align_renders_as_left_after_normalizing(): void
+    {
+        $doc = PageBuilderDocument::fromArray(['blocks' => [
+            ['id' => '11111111-1111-4111-8111-111111111111', 'type' => 'paragraph', 'data' => ['html' => '<p>x</p>', 'align' => 'diagonal']],
+        ]])->normalized();
+
+        $this->assertStringContainsString('pb-align-left', $this->render($doc->toArray()));
     }
 
     public function test_the_editor_hides_alignment_when_disabled(): void
@@ -207,7 +243,8 @@ final class RenderTest extends TestCase
             'blocks' => [['id' => '11111111-1111-4111-8111-111111111111', 'type' => 'paragraph', 'data' => ['html' => '', 'align' => 'left']]],
         ]);
 
-        $this->assertStringNotContainsString('data.align', $editor);
+        $this->assertStringNotContainsString('pb-align-tools', $editor);
+        $this->assertStringNotContainsString('textAlign', $editor);
     }
 
     public function test_the_image_editor_shows_the_picker_only_when_enabled(): void

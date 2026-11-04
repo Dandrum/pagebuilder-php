@@ -35,6 +35,8 @@
     --pb-color-toolbar: #f1f5f9;
     --pb-color-placeholder: #e2e8f0;
     --pb-radius-card: 10px;
+    /* Trix area: starting height; the user can drag it taller (resize: vertical). */
+    --pb-editor-min-height: 9rem;
 
     color: var(--pb-color-text);
     font-family: var(--pb-font);
@@ -583,7 +585,10 @@
 
 .pb-trix-editor {
     box-sizing: border-box;
-    min-height: 6rem;
+    display: block;
+    min-height: var(--pb-editor-min-height, 9rem);
+    resize: vertical;
+    overflow: auto;
     padding: var(--pb-space-2) var(--pb-space-3);
     border: 1px solid var(--pb-color-border);
     border-radius: 0 0 var(--pb-radius) var(--pb-radius);
@@ -594,6 +599,45 @@
 .pb-trix-editor:focus {
     outline: none;
     box-shadow: var(--pb-focus-ring);
+}
+
+/* Alignment buttons (segmented look, icon-only). */
+
+.pb-align-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    background: var(--pb-color-input);
+    color: var(--pb-color-text);
+    cursor: pointer;
+}
+
+.pb-align-button + .pb-align-button {
+    border-left: 1px solid var(--pb-color-border);
+}
+
+.pb-align-button svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.pb-align-button:hover {
+    background: var(--pb-color-surface-muted);
+}
+
+.pb-align-button--active,
+.pb-align-button--active:hover {
+    background: var(--pb-color-accent);
+    color: var(--pb-color-on-accent);
+}
+
+.pb-align-button:focus-visible {
+    outline: none;
+    box-shadow: inset var(--pb-focus-ring);
 }
 
 /* Trix's own heading/quote look is tiny; show what the rendered text will roughly look like. */

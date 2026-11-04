@@ -66,6 +66,17 @@ final class ImageTextBlockTest extends TestCase
         $this->assertSame('right', $this->normalize(['media_id' => 1, 'imagePosition' => 'right'])['imagePosition']);
     }
 
+    public function test_the_align_is_whitelisted(): void
+    {
+        foreach (['left', 'center', 'right', 'justify'] as $align) {
+            $this->assertSame($align, $this->normalize(['media_id' => 1, 'align' => $align])['align']);
+        }
+
+        $this->assertSame('left', $this->normalize(['media_id' => 1, 'align' => 'diagonal'])['align']);
+        $this->assertSame('left', $this->normalize(['media_id' => 1, 'align' => ['center']])['align']);
+        $this->assertSame('left', $this->normalize(['media_id' => 1])['align']);
+    }
+
     public function test_the_html_is_sanitized(): void
     {
         $out = $this->normalize([

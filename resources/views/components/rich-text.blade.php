@@ -1,8 +1,9 @@
-@props(['blockId', 'label' => ''])
+@props(['blockId', 'label' => '', 'alignable' => false])
 
 {{--
     One Trix editor with its own restricted toolbar: bold, italic, headings 1-6, link, bullet/number
-    list and quote. Attachments are blocked.
+    list and quote. Attachments are blocked. The editing area can be dragged taller (CSS resize).
+    With `alignable` it follows the block's data.align (set by components/align-tools).
 
     Trix only knows <h1> out of the box, so ensureTrix() registers heading2..heading6 on
     Trix.config.blockAttributes (once, before the HTML is loaded). The package ships no JS build; the
@@ -34,6 +35,12 @@
                     blocks['heading' + level] = { tagName: 'h' + level, terminal: true, breakOnReturn: true, group: false };
                 }
             }
+        },
+        align() {
+            const block = this.$wire.pageBuilderBlocks.find((b) => b.id === this.id);
+            const value = block && block.data ? block.data.align : 'left';
+
+            return ['left', 'center', 'right', 'justify'].includes(value) ? value : 'left';
         },
         index() {
             return this.$wire.pageBuilderBlocks.findIndex((b) => b.id === this.id);
@@ -112,5 +119,8 @@
         x-on:trix-initialize="load()"
         x-on:trix-change="push()"
         x-on:trix-file-accept.prevent
+        @if($alignable)
+            x-bind:style="{ textAlign: align() }"
+        @endif
     ></trix-editor>
 </div>

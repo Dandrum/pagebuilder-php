@@ -112,7 +112,7 @@ redeclaring them on `.pagebuilder` (editor) or `.pb-content` (output):
 | `blocks` | all four | Registered block type classes |
 | `max_blocks` | `200` | Validation cap for the number of blocks |
 | `max_html_length` | `20000` | Validation cap for one paragraph's HTML |
-| `alignment` | `true` | `false`: no align selects, the renderer ignores `align` |
+| `alignment` | `true` | `false`: no alignment buttons (left/center/right, paragraph and image + text), the renderer ignores `align` |
 | `sanitizer.allowed` | `p,div,br,strong,em,a[href],ul,ol,li,h1,h2,h3,h4,h5,h6,blockquote` | HTMLPurifier whitelist (headings and quotes come from the Trix toolbar) |
 | `sanitizer.schemes` / `nofollow` / `cache_path` | `http,https,mailto` / `true` / `null` | URI schemes, `rel=nofollow`, definition cache (`false` = none) |
 | `image.source` | `url` | `url` stores `data.url` (`data.imageUrl` for image + text); `media` stores `data.media_id`. All `image.*` options apply to both image-bearing blocks |
@@ -152,6 +152,14 @@ numbered list, quote. Trix only knows `heading1` natively, so `components/rich-t
 (no JS file, no build step in the package - the host only loads Trix). Headings and quotes are stored as
 `<h1>`-`<h6>` and `<blockquote>`; keep them in `sanitizer.allowed` if you override that list, and the
 rendered `.pb-prose` styles them (`--pb-heading-font`, `--pb-quote-border`, `--pb-quote-color`).
+
+**Resize and alignment.** The Trix area is `resize: vertical; overflow: auto` with
+`--pb-editor-min-height` (default `9rem`), so users drag it taller. Paragraph and image + text blocks
+get three icon buttons (`components/align-tools.blade.php`, only when `context.alignment` / the
+`alignment` option is on) that write `data.align` (`left|center|right`; `justify` stays valid but has no
+button) by block id via `$wire.$set('pageBuilderBlocks.<i>.data.align', v, false)`; the Trix area binds
+`text-align` to the same value (`rich-text` prop `alignable`). The renderer adds `pb-align-*` (paragraph
+block, and the text part of image + text); unknown values normalize to `left`.
 The standalone `heading` block is still shipped but not needed any more - leave it out of `blocks`.
 
 ## Image + text block

@@ -18,12 +18,7 @@
         </fieldset>
 
         @if(! empty($context['alignment']))
-            <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="pb-select" aria-label="{{ __('Alignment') }}">
-                <option value="left">{{ __('Left') }}</option>
-                <option value="center">{{ __('Center') }}</option>
-                <option value="right">{{ __('Right') }}</option>
-                <option value="justify">{{ __('Justify') }}</option>
-            </select>
+            @include('pagebuilder::components.align-tools', ['blockId' => $block['id']])
         @endif
     </div>
 
@@ -37,7 +32,7 @@
         </div>
 
         <div class="pb-image-text-edit-text">
-            @include('pagebuilder::components.rich-text', ['blockId' => $block['id'], 'label' => __('Image + Text :n', ['n' => $index + 1])])
+            @include('pagebuilder::components.rich-text', ['blockId' => $block['id'], 'label' => __('Image + Text :n', ['n' => $index + 1]), 'alignable' => ! empty($context['alignment'])])
 
             @error('pageBuilderBlocks.'.$index.'.data.html')
                 <span class="pb-error">{{ $message }}</span>

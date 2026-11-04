@@ -65,3 +65,12 @@ and every `resources/views/blocks/edit|render/*` view are **anonymous** componen
 `src/View/Components/Render.php`) only when a view genuinely needs constructor logic (as `Render`
 does, to decode the JSON before rendering). Don't promote a simple partial to a class component "for
 consistency" — the package deliberately keeps that to one class.
+
+## Alignment and resizing
+
+`components/align-tools.blade.php` (left/center/right icon buttons, `wire:ignore`, Alpine) replaces the old
+align `<select>` in the paragraph and image + text editors and is shown only when `context.alignment` is true.
+It reads/writes `data.align` by block id (`$wire.$set(..., false)`), never by index entangle; `rich-text`
+(`alignable` prop) binds `text-align` on the `trix-editor` to the same value. The Trix area is
+`resize: vertical` (`--pb-editor-min-height`); it sits in `wire:ignore wire:sort:ignore`, so the dragged
+height survives re-renders and does not start a block drag.
