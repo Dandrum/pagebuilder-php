@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Dandrum\PageBuilder\Blocks;
 
 use Dandrum\PageBuilder\Contracts\BlockType;
+use Dandrum\PageBuilder\Contracts\ContentAwareBlock;
 
-final class HeadingBlock implements BlockType
+final class HeadingBlock implements BlockType, ContentAwareBlock
 {
     public static function key(): string
     {
@@ -44,5 +45,27 @@ final class HeadingBlock implements BlockType
     public function renderView(): string
     {
         return 'pagebuilder::blocks.render.heading';
+    }
+
+    public function normalize(array $data): ?array
+    {
+        $text = is_string($data['text'] ?? null) ? trim($data['text']) : '';
+
+        if ($text === '') {
+            return null;
+        }
+
+        $align = $data['align'] ?? 'left';
+
+        return [
+            'level' => max(2, min(4, (int) ($data['level'] ?? 2))),
+            'text' => $text,
+            'align' => is_string($align) && in_array($align, ['left', 'center', 'right'], true) ? $align : 'left',
+        ];
+    }
+
+    public function plainText(array $data): string
+    {
+        return is_string($data['text'] ?? null) ? trim($data['text']) : '';
     }
 }

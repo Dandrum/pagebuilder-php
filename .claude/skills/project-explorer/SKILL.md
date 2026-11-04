@@ -63,8 +63,16 @@ grep -rln "ImageTextBlock\|image_text\|image-text" src resources config
 - **Any new user-facing string**: goes through `__('...')`, keyed by the literal English sentence,
   added to both `resources/lang/en.json` and `resources/lang/de.json` — search both before adding
   what might already exist under slightly different wording.
-- **Add a test**: see `.claude/rules/testing.md` first — there is no test suite yet, so this is
-  "set one up" (Testbench), not "add a test file to an existing suite".
+- **Add a test**: see `.claude/rules/testing.md` - a Testbench suite exists under `tests/`.
+
+## Cross-cutting files added for the media/sanitizer work
+
+- `src/Contracts/{HtmlSanitizer,ImageMediaResolver,ContentAwareBlock}.php`, `src/Support/PurifierHtmlSanitizer.php`,
+  `src/Support/TextHelper.php` (plain-text helpers).
+- `resources/views/components/rich-text.blade.php` - the Trix editor + per-block toolbar shared by
+  `paragraph` and `image-text`.
+- `resources/css/pagebuilder-{editor,content}.css` - shipped CSS (`--pb-*` variables).
+- `tests/` - Testbench suite, see `.claude/rules/testing.md`.
 
 ## Naming exceptions (verified — don't assume the pattern holds)
 

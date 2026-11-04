@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Dandrum\PageBuilder\Blocks;
 
 use Dandrum\PageBuilder\Contracts\BlockType;
+use Dandrum\PageBuilder\Contracts\ContentAwareBlock;
+use Dandrum\PageBuilder\Contracts\HtmlSanitizer;
+use Dandrum\PageBuilder\Support\TextHelper;
 
-final class ImageTextBlock implements BlockType
+final class ImageTextBlock implements BlockType, ContentAwareBlock
 {
     public static function key(): string
     {
@@ -46,5 +49,26 @@ final class ImageTextBlock implements BlockType
     public function renderView(): string
     {
         return 'pagebuilder::blocks.render.image-text';
+    }
+
+    public function normalize(array $data): ?array
+    {
+        $html = is_string($data['html'] ?? null) ? $data['html'] : '';
+        $imageUrl = is_string($data['imageUrl'] ?? null) ? trim($data['imageUrl']) : '';
+
+        $position = $data['imagePosition'] ?? 'left';
+        $align = $data['align'] ?? 'left';
+
+        return [
+            'imageUrl' => $imageUrl,
+            'imagePosition' => $position === 'right' ? 'right' : 'left',
+            'html' => app(HtmlSanitizer::class)->sanitize($html),
+            'align' => is_string($align) && in_array($align, ['left', 'center', 'right', 'justify'], true) ? $align : 'left',
+        ];
+    }
+
+    public function plainText(array $data): string
+    {
+        return TextHelper::htmlToText(is_string($data['html'] ?? null) ? $data['html'] : '');
     }
 }

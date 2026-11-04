@@ -1,0 +1,344 @@
+/*
+ * dandrum/livewire-pagebuilder - editor UI.
+ *
+ * Plain CSS, no Tailwind. Import it from the host's own stylesheet and override the
+ * --pb-* custom properties by redeclaring them on `.pagebuilder` after the import.
+ * Rules use single-class selectors (low specificity) and are not in a cascade layer.
+ */
+
+.pagebuilder {
+    --pb-color-text: #1f2937;
+    --pb-color-muted: #64748b;
+    --pb-color-border: #cbd5e1;
+    --pb-color-surface: #fff;
+    --pb-color-surface-muted: #f8fafc;
+    --pb-color-accent: #2563eb;
+    --pb-color-on-accent: #fff;
+    --pb-color-danger: #dc2626;
+    --pb-focus-ring: 0 0 0 2px #2563eb;
+    --pb-radius: 6px;
+    --pb-space-1: 0.25rem;
+    --pb-space-2: 0.5rem;
+    --pb-space-3: 0.75rem;
+    --pb-space-4: 1rem;
+    --pb-space-5: 1.5rem;
+    --pb-space-6: 2rem;
+    --pb-font: inherit;
+
+    color: var(--pb-color-text);
+    font-family: var(--pb-font);
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-surface);
+    padding: var(--pb-space-4);
+}
+
+.pb-list {
+    display: block;
+}
+
+.pb-item {
+    display: block;
+}
+
+.pb-block-frame {
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-surface);
+    padding: var(--pb-space-3);
+}
+
+.pb-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pb-space-2);
+    margin-bottom: var(--pb-space-2);
+}
+
+.pb-block-title {
+    display: flex;
+    align-items: center;
+    gap: var(--pb-space-2);
+}
+
+.pb-block-label {
+    color: var(--pb-color-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.pb-block-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--pb-space-1);
+}
+
+.pb-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--pb-radius);
+    background: transparent;
+    color: var(--pb-color-muted);
+    cursor: pointer;
+}
+
+.pb-icon-button svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.pb-icon-button:hover {
+    background: var(--pb-color-surface-muted);
+    color: var(--pb-color-text);
+}
+
+.pb-icon-button:focus-visible,
+.pb-button:focus-visible,
+.pb-insert-button:focus-visible {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+.pb-icon-button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.pb-icon-button--danger {
+    color: var(--pb-color-danger);
+}
+
+.pb-icon-button--danger:hover {
+    color: var(--pb-color-danger);
+}
+
+.pb-handle {
+    cursor: grab;
+    touch-action: none;
+}
+
+.pb-handle:active {
+    cursor: grabbing;
+}
+
+.pb-insert-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--pb-space-2);
+    padding: var(--pb-space-3) 0;
+}
+
+.pb-insert-button {
+    padding: var(--pb-space-1) var(--pb-space-3);
+    border: 1px solid var(--pb-color-border);
+    border-radius: 999px;
+    background: var(--pb-color-surface);
+    color: var(--pb-color-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.pb-insert-button:hover {
+    border-color: var(--pb-color-accent);
+    color: var(--pb-color-accent);
+}
+
+/* Block bodies and form controls */
+
+.pb-block-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-2);
+}
+
+.pb-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-2);
+}
+
+.pb-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pb-space-3);
+}
+
+.pb-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: var(--pb-space-4);
+}
+
+.pb-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-1);
+}
+
+.pb-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.pb-required {
+    color: var(--pb-color-danger);
+}
+
+.pb-input,
+.pb-select {
+    box-sizing: border-box;
+    width: 100%;
+    padding: var(--pb-space-2) var(--pb-space-3);
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-surface);
+    color: var(--pb-color-text);
+    font: inherit;
+    font-size: 0.875rem;
+}
+
+.pb-select {
+    width: auto;
+    align-self: flex-start;
+}
+
+.pb-input--heading {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.pb-input:focus,
+.pb-select:focus {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+.pb-button {
+    padding: var(--pb-space-2) var(--pb-space-3);
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-surface);
+    color: var(--pb-color-text);
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.pb-button:hover {
+    background: var(--pb-color-surface-muted);
+}
+
+.pb-button--danger {
+    border-color: var(--pb-color-danger);
+    color: var(--pb-color-danger);
+}
+
+.pb-file {
+    font-size: 0.875rem;
+}
+
+.pb-error {
+    color: var(--pb-color-danger);
+    font-size: 0.875rem;
+}
+
+.pb-notice {
+    margin: 0;
+    color: var(--pb-color-muted);
+    font-size: 0.875rem;
+}
+
+.pb-loading {
+    display: none;
+    color: var(--pb-color-muted);
+    font-size: 0.875rem;
+}
+
+/* Image block states */
+
+.pb-media {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--pb-space-3);
+}
+
+.pb-preview {
+    max-width: 100%;
+    max-height: 12rem;
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+}
+
+.pb-processing {
+    padding: var(--pb-space-3);
+    border: 1px dashed var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    color: var(--pb-color-muted);
+    font-size: 0.875rem;
+}
+
+.pb-media-meta {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.pb-media-meta dt {
+    color: var(--pb-color-muted);
+    font-size: 0.75rem;
+}
+
+.pb-media-meta dd {
+    margin: 0 0 var(--pb-space-2);
+}
+
+.pb-file-name {
+    word-break: break-all;
+    font-size: 0.875rem;
+}
+
+/* Trix */
+
+.pb-trix-toolbar {
+    display: block;
+    margin-bottom: var(--pb-space-2);
+}
+
+.pb-trix-editor {
+    box-sizing: border-box;
+    min-height: 6rem;
+    padding: var(--pb-space-2) var(--pb-space-3);
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-surface);
+    color: var(--pb-color-text);
+}
+
+.pb-trix-editor:focus {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+/* wire:sort (Sortable) states */
+
+.pb-item.sortable-ghost {
+    opacity: 0.4;
+}
+
+.pb-item.sortable-chosen > .pb-block-frame,
+.pb-item.sortable-drag > .pb-block-frame {
+    border-color: var(--pb-color-accent);
+    box-shadow: var(--pb-focus-ring);
+}

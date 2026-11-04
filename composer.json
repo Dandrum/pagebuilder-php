@@ -8,6 +8,11 @@
             "Dandrum\\PageBuilder\\": "src"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Dandrum\\PageBuilder\\Tests\\": "tests"
+        }
+    },
     "authors": [
         {
             "name": "Daniel",
@@ -15,7 +20,8 @@
         }
     ],
     "scripts": {
-        "format": "vendor/bin/pint"
+        "format": "vendor/bin/pint",
+        "test": "vendor/bin/phpunit"
     },
     "config": {
         "sort-packages": true
@@ -30,11 +36,14 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
-        "php": "^8.2|^8.3",
-        "illuminate/support": "^11|^12",
-        "livewire/livewire": "^3|dev-main"
+        "php": "^8.2",
+        "ezyang/htmlpurifier": "^4.17",
+        "illuminate/support": "^11|^12|^13",
+        "livewire/livewire": "^3|^4"
     },
     "require-dev": {
-        "laravel/pint": "^1"
+        "laravel/pint": "^1",
+        "orchestra/testbench": "^9|^10|^11",
+        "phpunit/phpunit": "^11|^12"
     }
 }

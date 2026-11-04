@@ -1,59 +1,40 @@
-@props(['block', 'index'])
+@props(['block', 'index', 'context' => []])
 
-<div class="grid gap-4 md:grid-cols-2">
-    <div class="space-y-2">
-        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.imagePosition" class="rounded-md border-slate-300 text-sm">
+<div class="pb-block-body pb-columns">
+    <div class="pb-stack">
+        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.imagePosition" class="pb-select" aria-label="{{ __('Image position') }}">
             <option value="left">{{ __('Image position') }}: {{ __('Left') }}</option>
             <option value="right">{{ __('Image position') }}: {{ __('Right') }}</option>
         </select>
 
         @if(filled($block['data']['imageUrl'] ?? null))
-            <img src="{{ $block['data']['imageUrl'] }}" alt="" class="max-h-48 rounded-md border border-slate-200" />
+            <img src="{{ $block['data']['imageUrl'] }}" alt="" class="pb-preview" />
         @endif
 
-        <div wire:loading.flex wire:target="pageBuilderUploads.{{ $block['id'] }}" class="hidden items-center text-sm text-slate-500">
+        <div wire:loading.flex wire:target="pageBuilderUploads.{{ $block['id'] }}" class="pb-loading">
             {{ __('Uploading...') }}
         </div>
 
-        <input type="file" accept="image/*" wire:model="pageBuilderUploads.{{ $block['id'] }}" class="block w-full text-sm" />
+        <input type="file" accept="image/*" wire:model="pageBuilderUploads.{{ $block['id'] }}" class="pb-file" aria-label="{{ __('Image') }}" />
         @error('pageBuilderUploads.'.$block['id'])
-            <span class="text-sm text-red-600">{{ $message }}</span>
+            <span class="pb-error">{{ $message }}</span>
         @enderror
     </div>
 
-    <div class="space-y-2">
-        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="rounded-md border-slate-300 text-sm">
-            <option value="left">{{ __('Left') }}</option>
-            <option value="center">{{ __('Center') }}</option>
-            <option value="right">{{ __('Right') }}</option>
-            <option value="justify">{{ __('Justify') }}</option>
-        </select>
+    <div class="pb-stack">
+        @if(! empty($context['alignment']))
+            <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="pb-select" aria-label="{{ __('Alignment') }}">
+                <option value="left">{{ __('Left') }}</option>
+                <option value="center">{{ __('Center') }}</option>
+                <option value="right">{{ __('Right') }}</option>
+                <option value="justify">{{ __('Justify') }}</option>
+            </select>
+        @endif
 
-        <div
-            x-data="{
-                content: @entangle('pageBuilderBlocks.'.$index.'.data.html'),
-                initTrix() {
-                    const trix = this.$refs.trix;
-                    trix.addEventListener('trix-initialize', () => {
-                        if (this.content) trix.editor.loadHTML(this.content);
-                    });
-                    trix.addEventListener('trix-change', () => {
-                        this.content = trix.innerHTML;
-                    });
-                },
-            }"
-            x-init="initTrix()"
-            wire:ignore
-        >
-            <input id="pagebuilder-image-text-{{ $block['id'] }}" type="hidden">
-            <trix-editor
-                x-ref="trix"
-                input="pagebuilder-image-text-{{ $block['id'] }}"
-                class="trix-content block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"
-            ></trix-editor>
-        </div>
+        @include('pagebuilder::components.rich-text', ['blockId' => $block['id'], 'label' => __('Image + Text :n', ['n' => $index + 1])])
+
         @error('pageBuilderBlocks.'.$index.'.data.html')
-            <span class="text-sm text-red-600">{{ $message }}</span>
+            <span class="pb-error">{{ $message }}</span>
         @enderror
     </div>
 </div>

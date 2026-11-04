@@ -1,27 +1,30 @@
-@props(['block', 'index'])
+@props(['block', 'index', 'context' => []])
 
-<div class="space-y-2">
-    <div class="flex gap-3">
-        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.level" class="rounded-md border-slate-300 text-sm">
+<div class="pb-block-body">
+    <div class="pb-row">
+        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.level" class="pb-select" aria-label="{{ __('Heading level') }}">
             <option value="2">H2</option>
             <option value="3">H3</option>
             <option value="4">H4</option>
         </select>
 
-        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="rounded-md border-slate-300 text-sm">
-            <option value="left">{{ __('Left') }}</option>
-            <option value="center">{{ __('Center') }}</option>
-            <option value="right">{{ __('Right') }}</option>
-        </select>
+        @if(! empty($context['alignment']))
+            <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="pb-select" aria-label="{{ __('Alignment') }}">
+                <option value="left">{{ __('Left') }}</option>
+                <option value="center">{{ __('Center') }}</option>
+                <option value="right">{{ __('Right') }}</option>
+            </select>
+        @endif
     </div>
 
     <input
         type="text"
         wire:model.blur="pageBuilderBlocks.{{ $index }}.data.text"
         placeholder="{{ __('Heading text') }}"
-        class="block w-full rounded-md border-slate-300 text-lg font-semibold shadow-sm sm:text-base"
+        aria-label="{{ __('Heading text') }}"
+        class="pb-input pb-input--heading"
     />
     @error('pageBuilderBlocks.'.$index.'.data.text')
-        <span class="text-sm text-red-600">{{ $message }}</span>
+        <span class="pb-error">{{ $message }}</span>
     @enderror
 </div>
