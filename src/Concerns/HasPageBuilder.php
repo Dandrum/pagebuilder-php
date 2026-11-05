@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dandrum\PageBuilder\Concerns;
 
 use Closure;
+use Dandrum\PageBuilder\Blocks\QuoteBlock;
 use Dandrum\PageBuilder\Contracts\ImageBearingBlock;
 use Dandrum\PageBuilder\Contracts\ImageMediaResolver;
 use Dandrum\PageBuilder\Support\BlockRegistry;
@@ -521,7 +522,15 @@ trait HasPageBuilder
      */
     public function pageBuilderMessages(): array
     {
-        return [
+        $quoteMessages = [];
+
+        foreach ($this->pageBuilderBlocks as $i => $block) {
+            if (is_array($block) && ($block['type'] ?? null) === QuoteBlock::key()) {
+                $quoteMessages["pageBuilderBlocks.{$i}.data.text.max"] = __('A quote may be at most :max characters long.');
+            }
+        }
+
+        return $quoteMessages + [
             'pageBuilderBlocks.max' => __('At most :max blocks are allowed.'),
             'pageBuilderBlocks.*.type.in' => __('This block type is not available.'),
             'pageBuilderBlocks.*.data.html.max' => __('A paragraph may be at most :max characters long.'),

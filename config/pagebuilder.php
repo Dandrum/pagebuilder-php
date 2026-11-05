@@ -6,6 +6,7 @@ use Dandrum\PageBuilder\Blocks\HeadingBlock;
 use Dandrum\PageBuilder\Blocks\ImageBlock;
 use Dandrum\PageBuilder\Blocks\ImageTextBlock;
 use Dandrum\PageBuilder\Blocks\ParagraphBlock;
+use Dandrum\PageBuilder\Blocks\QuoteBlock;
 
 return [
 
@@ -20,6 +21,7 @@ return [
         HeadingBlock::class,
         ImageBlock::class,
         ImageTextBlock::class,
+        QuoteBlock::class,
     ],
 
     /*
@@ -27,6 +29,8 @@ return [
      */
     'max_blocks' => 200,
     'max_html_length' => 20000,
+    // Zitat-Block (plain text): validation cap and storage truncation.
+    'max_quote_length' => 500,
 
     /*
      * false: the editor shows no alignment selects and the renderer ignores `align`.

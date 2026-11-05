@@ -63,5 +63,8 @@
     "Image left": "Image left",
     "Image right": "Image right",
     "Upload an image or choose one from the library": "Upload an image or choose one from the library",
-    "JPG, PNG · landscape recommended": "JPG, PNG · landscape recommended"
+    "JPG, PNG · landscape recommended": "JPG, PNG · landscape recommended",
+    "Enter quote …": "Enter quote …",
+    "Quote text": "Quote text",
+    "A quote may be at most :max characters long.": "A quote may be at most :max characters long."
 }

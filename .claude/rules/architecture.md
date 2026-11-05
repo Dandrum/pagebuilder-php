@@ -113,3 +113,10 @@ Not implemented. The trait only holds one in-memory `$pageBuilderBlocks` array p
 — there is no separate draft column, no history stack. If a host app needs either, it's additive
 on top of the trait (e.g. a second `content_draft` column read/written the same way via a second
 `PageBuilderDocument`), not a change to the trait's core save flow.
+
+## Quote block
+
+`Blocks\QuoteBlock` (`quote`): `data.text` only, plain text. `normalize()` strips tags/entity-encoded tags (loop until stable,
+idempotent), collapses whitespace, truncates to `max_quote_length` (default 500) and returns null when empty. Edit view is a
+`<textarea wire:model.blur>` (index-bound like the heading input, no Trix/`wire:ignore`, so no id-based sync needed). The
+too-long message is added per quote block index in `pageBuilderMessages()` (a wildcard `data.text.max` key would also hit headings).

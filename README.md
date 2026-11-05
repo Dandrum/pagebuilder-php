@@ -1,7 +1,7 @@
 # livewire-pagebuilder
 
 Laravel Livewire block-based content builder. Stores a block list (`paragraph`, `heading`,
-`image`, `image_text`) as a single JSON document on any model column, so it can be plugged into
+`image`, `image_text`, `quote`) as a single JSON document on any model column, so it can be plugged into
 any Livewire component without forcing a base class.
 
 Requires Laravel 11-13 and Livewire 3-4 (PHP 8.2+). Drag & drop needs Livewire 4 (`wire:sort`);
@@ -109,9 +109,10 @@ redeclaring them on `.pagebuilder` (editor) or `.pb-content` (output):
 
 | Key | Default | Meaning |
 |---|---|---|
-| `blocks` | all four | Registered block type classes |
+| `blocks` | all five | Registered block type classes |
 | `max_blocks` | `200` | Validation cap for the number of blocks |
 | `max_html_length` | `20000` | Validation cap for one paragraph's HTML |
+| `max_quote_length` | `500` | Validation cap and storage truncation for a quote block's plain text |
 | `alignment` | `true` | `false`: no alignment buttons (left/center/right, paragraph and image + text), the renderer ignores `align` |
 | `sanitizer.allowed` | `p,div,br,strong,em,a[href],ul,ol,li,h1,h2,h3,h4,h5,h6,blockquote` | HTMLPurifier whitelist (headings and quotes come from the Trix toolbar) |
 | `sanitizer.schemes` / `nofollow` / `cache_path` | `http,https,mailto` / `true` / `null` | URI schemes, `rel=nofollow`, definition cache (`false` = none) |
@@ -218,3 +219,15 @@ vendor/bin/phpunit
 ```
 
 See `.claude/rules/` for architecture, Laravel conventions, and testing notes.
+
+## Quote block
+
+`quote` is a pull quote: `data` holds only `text` (plain text, no HTML, no alignment/size/author).
+Normalizing strips tags (also entity-encoded ones), collapses whitespace and newlines, truncates to
+`max_quote_length` and drops an empty quote. The editor is a plain `<textarea>` (`wire:model.blur`, same
+as the heading input); the renderer outputs `<figure class="pb-block pb-block--quote"><blockquote
+class="pb-quote"><p>text</p></blockquote></figure>`, escaped. Style it with `--pb-quote-block-font`,
+`--pb-quote-block-color`, `--pb-quote-block-accent`, `--pb-quote-block-size`, `--pb-quote-block-margin`
+(on `.pb-content`; the editor hint reads `--pb-quote-block-accent`/`-font` too). It is deliberately distinct from
+the subtle inline `blockquote` inside `.pb-prose` (`--pb-quote-border`/`--pb-quote-color`). A too-long
+text uses the message "A quote may be at most :max characters long.".

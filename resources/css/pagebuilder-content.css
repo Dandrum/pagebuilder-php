@@ -156,3 +156,47 @@
 .pb-align-justify {
     text-align: justify;
 }
+
+/* Pull quote block: large serif text, accent bar and a big opening mark. */
+
+.pb-content {
+    --pb-quote-block-font: var(--pb-heading-font);
+    --pb-quote-block-color: inherit;
+    --pb-quote-block-accent: #475569;
+    --pb-quote-block-size: 1.75rem;
+    --pb-quote-block-margin: 2rem;
+}
+
+.pb-content .pb-block--quote {
+    position: relative;
+    margin: var(--pb-quote-block-margin) 0;
+    padding: 0.25rem 0 0.25rem 1.5rem;
+    border-left: 6px solid var(--pb-quote-block-accent);
+}
+
+.pb-block--quote::before {
+    content: "\201C";
+    display: block;
+    height: 2.75rem;
+    margin-bottom: -0.25rem;
+    color: var(--pb-quote-block-accent);
+    font-family: var(--pb-quote-block-font);
+    font-size: 5rem;
+    line-height: 1;
+}
+
+.pb-block--quote .pb-quote {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: var(--pb-quote-block-color);
+    font-family: var(--pb-quote-block-font);
+    font-size: var(--pb-quote-block-size);
+    font-style: italic;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.pb-block--quote .pb-quote p {
+    margin: 0;
+}
