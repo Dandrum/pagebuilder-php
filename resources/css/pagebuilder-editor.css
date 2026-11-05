@@ -687,3 +687,22 @@
     border-color: var(--pb-color-accent);
     box-shadow: var(--pb-focus-ring);
 }
+
+/* Tailwind's preflight resets list markers; show bullets/numbers while editing, like the rendered text. */
+.pb-trix-editor ul,
+.pb-trix-editor ol {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.pb-trix-editor ul {
+    list-style: disc outside;
+}
+
+.pb-trix-editor ol {
+    list-style: decimal outside;
+}
+
+.pb-trix-editor li {
+    display: list-item;
+}
