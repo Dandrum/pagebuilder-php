@@ -201,6 +201,8 @@ final class RenderTest extends TestCase
         $this->assertStringContainsString('aria-label="Align left"', $editor);
         $this->assertStringContainsString('aria-label="Align center"', $editor);
         $this->assertStringContainsString('aria-label="Align right"', $editor);
+        $this->assertStringContainsString('aria-label="Justify"', $editor);
+        $this->assertStringContainsString('swapHeading($event)', $editor);
         $this->assertStringNotContainsString('<select', $editor);
         $this->assertStringContainsString('textAlign: align()', $editor);
     }

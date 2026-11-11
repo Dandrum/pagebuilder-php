@@ -36,6 +36,26 @@
                 }
             }
         },
+        // Trix marks headings as terminal blocks, so another heading button is a no-op while one is
+        // active. Swap explicitly: drop the active level, then apply the clicked one.
+        swapHeading(event) {
+            const button = event.target.closest('[data-trix-attribute^=heading]');
+            const editor = this.$refs.trix.editor;
+
+            if (!button || !editor) {
+                return;
+            }
+
+            const next = button.dataset.trixAttribute;
+            const active = [1, 2, 3, 4, 5, 6].map((n) => 'heading' + n).find((name) => editor.attributeIsActive(name));
+
+            if (active && active !== next) {
+                event.preventDefault();
+                event.stopPropagation();
+                editor.deactivateAttribute(active);
+                editor.activateAttribute(next);
+            }
+        },
         align() {
             const block = this.$wire.pageBuilderBlocks.find((b) => b.id === this.id);
             const value = block && block.data ? block.data.align : 'left';
@@ -66,7 +86,7 @@
     }"
     x-init="ensureTrix(); $nextTick(() => { if ($refs.trix.editor) load(); })"
 >
-    <trix-toolbar id="pb-{{ $blockId }}-toolbar" class="pb-trix-toolbar" role="toolbar" aria-label="{{ __('Text formatting') }}">
+    <trix-toolbar id="pb-{{ $blockId }}-toolbar" class="pb-trix-toolbar" role="toolbar" x-on:click.capture="swapHeading($event)" aria-label="{{ __('Text formatting') }}">
         <div class="trix-button-row">
             <span class="trix-button-group trix-button-group--text-tools" data-trix-button-group="text-tools">
                 <button type="button" class="{{ $tool }} pb-tool--bold" data-trix-attribute="bold" data-trix-key="b" title="{{ __('Bold') }}" aria-label="{{ __('Bold') }}" tabindex="-1">B</button>
