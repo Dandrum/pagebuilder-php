@@ -22,6 +22,7 @@
         <p class="pb-notice">{{ __('This gallery has no images yet.') }}</p>
     @endif
 
+    <div class="pb-gallery-items">
     @foreach($items as $j => $item)
         @php $itemId = (string) ($item['id'] ?? ''); @endphp
 
@@ -52,6 +53,7 @@
             ])
         </div>
     @endforeach
+    </div>
 
     @error($base.'items')
         <span class="pb-error">{{ $message }}</span>

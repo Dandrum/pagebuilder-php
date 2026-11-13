@@ -778,7 +778,16 @@
     box-shadow: var(--pb-focus-ring);
 }
 
+/* 4-5 cards per row in a normal editor width, the fields sit below each preview (the image field stacks them in a narrow card). */
+.pb-gallery-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: var(--pb-space-3);
+    align-items: start;
+}
+
 .pb-gallery-item {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: var(--pb-space-2);
