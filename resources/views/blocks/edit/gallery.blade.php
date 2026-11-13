@@ -48,6 +48,7 @@
                 'urlKey' => 'url',
                 'prefix' => $base.'items.'.$j.'.',
                 'clearable' => false,
+                'applyAll' => $count > 1 ? ['block' => $blockId, 'item' => $itemId] : null,
             ])
         </div>
     @endforeach
@@ -55,9 +56,19 @@
     @error($base.'items')
         <span class="pb-error">{{ $message }}</span>
     @enderror
+    @error('pageBuilderGalleryUploads.'.$blockId)
+        <span class="pb-error">{{ $message }}</span>
+    @enderror
+    <div wire:loading.flex wire:target="pageBuilderGalleryUploads.{{ $blockId }}" class="pb-loading">{{ __('Uploading...') }}</div>
 
     <div class="pb-row pb-gallery-footer">
         <button type="button" class="pb-button" wire:click="addPageBuilderGalleryItem('{{ $blockId }}')" @disabled($count >= $max)>{{ __('Add image') }}</button>
+        @if(($context['options']['upload'] ?? 'immediate') !== 'off')
+            <label class="pb-button pb-file-button" @if($count >= $max) aria-disabled="true" @endif>
+                {{ __('Upload several images') }}
+                <input type="file" accept="image/*" multiple wire:model="pageBuilderGalleryUploads.{{ $blockId }}" x-on:livewire-upload-finish="$el.value = ''" class="pb-file" @disabled($count >= $max) />
+            </label>
+        @endif
         <span class="pb-gallery-count">{{ __(':count of :max images', ['count' => $count, 'max' => $max]) }}</span>
     </div>
 </div>

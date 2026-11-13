@@ -814,3 +814,14 @@
     color: var(--pb-color-muted);
     font-size: 0.8125rem;
 }
+
+.pb-link-button {
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--pb-color-accent, currentColor);
+    font-size: 0.8125rem;
+    text-decoration: underline;
+    cursor: pointer;
+}

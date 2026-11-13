@@ -231,6 +231,157 @@ final class GalleryEditorTest extends TestCase
         $this->assertSame([], $component->get('pageBuilderUploads'));
     }
 
+    /**
+     * @param  list<array<string, mixed>>  $items
+     */
+    private function renderEditor(array $items): string
+    {
+        $block = ['id' => self::G, 'type' => 'gallery', 'data' => ['slideshow' => false, 'items' => $items]];
+
+        return Blade::render('<x-pagebuilder::editor :blocks="[$block]" :block-types="[]" :context="$context" />', [
+            'block' => $block,
+            'context' => [
+                'options' => ['source' => 'media', 'picker' => true, 'upload' => 'deferred', 'upload_required' => ['alt', 'caption', 'credit']],
+                'previews' => [],
+                'uploads' => [self::I1 => ['previewUrl' => null, 'name' => 'a.jpg'], self::I2 => ['previewUrl' => null, 'name' => 'b.jpg']],
+                'galleryMax' => 30,
+            ],
+        ]);
+    }
+    public function test_several_files_at_once_become_one_item_each_with_a_pending_upload(): void
+    {
+        $this->useMediaSource();
+
+        $component = Livewire::test(EditorHost::class, $this->host([]))
+            ->set('pageBuilderGalleryUploads.'.self::G, [
+                UploadedFile::fake()->image('a.jpg'),
+                UploadedFile::fake()->image('b.jpg'),
+                UploadedFile::fake()->image('c.jpg'),
+            ]);
+
+        $ids = $this->itemIds($component);
+
+        $this->assertCount(3, $ids);
+        $this->assertCount(3, array_unique($ids));
+        $this->assertEqualsCanonicalizing($ids, array_keys($component->get('pageBuilderUploads')));
+        $this->assertSame([], $component->get('pageBuilderGalleryUploads'));
+
+        $component->call('storePending');
+
+        $this->assertSame(['a.jpg', 'b.jpg', 'c.jpg'], EditorHost::$stored);
+    }
+
+    public function test_the_multi_upload_stops_at_the_maximum_and_reports_it(): void
+    {
+        $this->useMediaSource();
+        config()->set('pagebuilder.gallery.max_images', 2);
+
+        $component = Livewire::test(EditorHost::class, $this->host([['id' => self::I1, 'media_id' => 1]]))
+            ->set('pageBuilderGalleryUploads.'.self::G, [
+                UploadedFile::fake()->image('a.jpg'),
+                UploadedFile::fake()->image('b.jpg'),
+            ]);
+
+        $this->assertCount(2, $this->itemIds($component));
+        $component->assertHasErrors(['pageBuilderGalleryUploads.'.self::G]);
+    }
+
+    public function test_the_multi_upload_drops_invalid_files_and_names_them(): void
+    {
+        $this->useMediaSource();
+
+        $component = Livewire::test(EditorHost::class, $this->host([]))
+            ->set('pageBuilderGalleryUploads.'.self::G, [
+                UploadedFile::fake()->create('doc.pdf', 10, 'application/pdf'),
+                UploadedFile::fake()->image('ok.jpg'),
+            ]);
+
+        $this->assertCount(1, $this->itemIds($component));
+        $this->assertCount(1, $component->get('pageBuilderUploads'));
+        $component->assertHasErrors(['pageBuilderGalleryUploads.'.self::G]);
+    }
+
+    public function test_the_multi_upload_is_ignored_when_uploads_are_off_or_the_block_is_not_a_gallery(): void
+    {
+        $this->useMediaSource(['upload' => 'off']);
+
+        $component = Livewire::test(EditorHost::class, $this->host([]))
+            ->set('pageBuilderGalleryUploads.'.self::G, [UploadedFile::fake()->image('a.jpg')]);
+
+        $this->assertSame([], $this->itemIds($component));
+
+        $this->useMediaSource();
+
+        $component = Livewire::test(EditorHost::class, $this->host([]))
+            ->set('pageBuilderGalleryUploads.44444444-4444-4444-8444-444444444444', [UploadedFile::fake()->image('a.jpg')]);
+
+        $this->assertSame([], $this->itemIds($component));
+        $this->assertSame([], $component->get('pageBuilderUploads'));
+    }
+
+    public function test_apply_to_all_copies_alt_and_credit_to_pending_items_only_and_the_caption_to_every_item(): void
+    {
+        $this->useMediaSource();
+
+        $component = Livewire::test(EditorHost::class, $this->host([
+            ['id' => self::I1, 'media_id' => null, 'url' => '', 'alt' => ' Fest ', 'caption' => 'Unterschrift', 'credit' => 'Foto Müller'],
+            ['id' => self::I2, 'media_id' => null, 'url' => '', 'alt' => '', 'caption' => '', 'credit' => ''],
+            ['id' => self::I3, 'media_id' => 2, 'caption' => ''],
+        ]));
+
+        $component->call('applyPageBuilderGalleryField', self::G, self::I1, 'alt')
+            ->call('applyPageBuilderGalleryField', self::G, self::I1, 'credit')
+            ->call('applyPageBuilderGalleryField', self::G, self::I1, 'caption');
+
+        $this->assertSame('Fest', $component->get('pageBuilderBlocks.0.data.items.1.alt'));
+        $this->assertSame('Foto Müller', $component->get('pageBuilderBlocks.0.data.items.1.credit'));
+        $this->assertSame('Unterschrift', $component->get('pageBuilderBlocks.0.data.items.1.caption'));
+        $this->assertArrayNotHasKey('alt', $component->get('pageBuilderBlocks.0.data.items.2'));
+        $this->assertArrayNotHasKey('credit', $component->get('pageBuilderBlocks.0.data.items.2'));
+        $this->assertSame('Unterschrift', $component->get('pageBuilderBlocks.0.data.items.2.caption'));
+        $this->assertSame(' Fest ', $component->get('pageBuilderBlocks.0.data.items.0.alt'));
+    }
+
+    public function test_apply_to_all_ignores_unknown_fields_blocks_and_items(): void
+    {
+        $this->useMediaSource();
+
+        $component = Livewire::test(EditorHost::class, $this->host());
+        $before = $component->get('pageBuilderBlocks');
+
+        $component->call('applyPageBuilderGalleryField', self::G, self::I1, 'media_id')
+            ->call('applyPageBuilderGalleryField', self::G, '44444444-4444-4444-8444-444444444444', 'caption')
+            ->call('applyPageBuilderGalleryField', '44444444-4444-4444-8444-444444444444', self::I1, 'caption');
+
+        $this->assertSame($before, $component->get('pageBuilderBlocks'));
+    }
+
+    public function test_the_editor_offers_the_multi_upload_and_apply_to_all_buttons(): void
+    {
+        $this->useMediaSource();
+
+        $html = $this->renderEditor([
+            ['id' => self::I1, 'media_id' => null, 'url' => '', 'alt' => '', 'caption' => '', 'credit' => ''],
+            ['id' => self::I2, 'media_id' => null, 'url' => '', 'alt' => '', 'caption' => '', 'credit' => ''],
+        ]);
+
+        $this->assertStringContainsString('multiple', $html);
+        $this->assertStringContainsString('pageBuilderGalleryUploads.'.self::G, $html);
+        $this->assertStringContainsString("applyPageBuilderGalleryField('".self::G."', '".self::I1."', 'alt')", $html);
+        $this->assertStringContainsString("applyPageBuilderGalleryField('".self::G."', '".self::I2."', 'credit')", $html);
+    }
+
+    public function test_a_single_image_has_no_apply_to_all_button(): void
+    {
+        $this->useMediaSource();
+
+        $html = $this->renderEditor([
+            ['id' => self::I1, 'media_id' => null, 'url' => '', 'alt' => '', 'caption' => '', 'credit' => ''],
+        ]);
+
+        $this->assertStringNotContainsString('applyPageBuilderGalleryField', $html);
+    }
+
     public function test_an_immediate_upload_stores_right_away_into_the_item(): void
     {
         $this->useMediaSource(['upload' => 'immediate']);

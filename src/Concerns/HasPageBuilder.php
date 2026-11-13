@@ -48,6 +48,9 @@ trait HasPageBuilder
     /** @var array<string, TemporaryUploadedFile> keyed by block id */
     public array $pageBuilderUploads = [];
 
+    /** @var array<string, array<int, TemporaryUploadedFile>> multi-file input of a gallery, keyed by block id; turned into items at once */
+    public array $pageBuilderGalleryUploads = [];
+
     public function initializePageBuilder(): void
     {
         $raw = data_get($this->getPageBuilderModel(), $this->getPageBuilderStorageField());
@@ -473,6 +476,87 @@ trait HasPageBuilder
         array_splice($items, $target, 0, $item);
 
         $this->pageBuilderBlocks[$index]['data']['items'] = $items;
+    }
+
+    /**
+     * Livewire hook for the gallery's multi-file input `wire:model="pageBuilderGalleryUploads.{blockId}"`:
+     * every file becomes a new gallery item and goes through the normal single-slot upload path
+     * (validation, deferred or immediate storing). Files beyond `gallery.max_images` and files that
+     * fail validation are dropped; one error per block names them.
+     */
+    public function updatedPageBuilderGalleryUploads(mixed $value, string $key): void
+    {
+        $blockId = explode('.', $key)[0];
+        $files = $this->pageBuilderGalleryUploads[$blockId] ?? [];
+        unset($this->pageBuilderGalleryUploads[$blockId]);
+
+        $index = $this->findPageBuilderGalleryIndex($blockId);
+
+        if ($index === null || ($this->pageBuilderImageOptions()['upload'] ?? 'immediate') === 'off') {
+            return;
+        }
+
+        $files = array_values(array_filter((array) $files, fn ($file) => $file instanceof TemporaryUploadedFile));
+        $free = max(0, GalleryBlock::maxImages() - count($this->pageBuilderGalleryItems($index)));
+        $errors = [];
+
+        if (count($files) > $free) {
+            $errors[] = __('A gallery may contain at most :max images.', ['max' => GalleryBlock::maxImages()]);
+            $files = array_slice($files, 0, $free);
+        }
+
+        foreach ($files as $file) {
+            $this->addPageBuilderGalleryItem($blockId);
+            $items = $this->pageBuilderGalleryItems($index);
+            $itemId = (string) (end($items)['id'] ?? '');
+
+            $this->pageBuilderUploads[$itemId] = $file;
+
+            try {
+                $this->updatedPageBuilderUploads($file, $itemId);
+            } catch (ValidationException $e) {
+                $this->removePageBuilderGalleryItem($blockId, $itemId);
+                $errors[] = $file->getClientOriginalName().': '.(collect($e->errors())->flatten()->first() ?? __('The image could not be uploaded.'));
+            }
+        }
+
+        $this->resetErrorBag("pageBuilderGalleryUploads.{$blockId}");
+
+        foreach ($errors as $message) {
+            $this->addError("pageBuilderGalleryUploads.{$blockId}", $message);
+        }
+    }
+
+    /**
+     * "Apply to all": copies one text field (alt, caption, credit) of a gallery item to the other
+     * items. Items already picked from the library keep their alt text and credit (those belong to
+     * the library image); the caption override is copied to every item.
+     */
+    public function applyPageBuilderGalleryField(string $blockId, string $itemId, string $field): void
+    {
+        $index = $this->findPageBuilderGalleryIndex($blockId);
+
+        if ($index === null || ! in_array($field, ['alt', 'caption', 'credit'], true)) {
+            return;
+        }
+
+        $items = $this->pageBuilderGalleryItems($index);
+        $source = $this->findPageBuilderGalleryItemIndex($items, $itemId);
+
+        if ($source === null) {
+            return;
+        }
+
+        $value = trim((string) ($items[$source][$field] ?? ''));
+
+        foreach ($items as $position => $item) {
+            if ($position === $source || ($field !== 'caption' && filled($item['media_id'] ?? null))) {
+                continue;
+            }
+
+            $this->pageBuilderBlocks[$index]['data']['items'][$position][$field] = $value;
+            $this->resetErrorBag("pageBuilderBlocks.{$index}.data.items.{$position}.{$field}");
+        }
     }
 
     /**

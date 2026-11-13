@@ -77,5 +77,7 @@
     "Remove this image from the gallery?": "Dieses Bild aus der Galerie entfernen?",
     "Remove image :n from the gallery": "Bild :n aus der Galerie entfernen",
     ":count of :max images": ":count von :max Bildern",
-    "A gallery may contain at most :max images.": "Eine Galerie darf höchstens :max Bilder enthalten."
+    "A gallery may contain at most :max images.": "Eine Galerie darf höchstens :max Bilder enthalten.",
+    "Apply to all": "Übernehmen für alle",
+    "Upload several images": "Mehrere Bilder hochladen"
 }

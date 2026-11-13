@@ -1,10 +1,10 @@
-@props(['block', 'index', 'context' => [], 'urlKey' => 'url', 'prefix' => null, 'clearable' => true])
+@props(['block', 'index', 'context' => [], 'urlKey' => 'url', 'prefix' => null, 'clearable' => true, 'applyAll' => null])
 
 {{--
     The image part of an image-bearing block (image, image + text): preview, upload / library
     picker and the alt / caption / credit row. All states of `pagebuilder.image` live here.
     For a gallery item `block` is `['id' => item id, 'data' => item]` and `prefix` points at the item
-    (`pageBuilderBlocks.{i}.data.items.{j}.`); `clearable` = false hides "Remove image" (the item itself is removed instead).
+    (`pageBuilderBlocks.{i}.data.items.{j}.`); `clearable` = false hides "Remove image" (the item itself is removed instead); `applyAll` shows the "Apply to all" buttons.
 --}}
 @php
     $id = $block['id'];
@@ -114,12 +114,14 @@
     @enderror
 
     @if($source === 'url')
-        <x-pagebuilder::image-meta :prefix="$prefix" :fields="['alt', 'caption']" :required="['alt']" />
+        <x-pagebuilder::image-meta :prefix="$prefix" :fields="['alt', 'caption']" :required="['alt']" :apply-all="$applyAll" />
     @elseif($pending !== null)
-        <x-pagebuilder::image-meta :prefix="$prefix" :required="$required" />
+        <x-pagebuilder::image-meta :prefix="$prefix" :required="$required" :apply-all="$applyAll" />
     @elseif($hasMedia)
         <x-pagebuilder::image-meta
             :prefix="$prefix"
+            :apply-all="$applyAll"
+            :applyable="['caption']"
             :readonly="['alt' => is_array($preview) ? ($preview['alt'] ?? '') : '', 'credit' => is_array($preview) ? ($preview['credit'] ?? '') : '']"
             :placeholders="['caption' => is_array($preview) ? ($preview['caption'] ?? '') : '']"
         />
