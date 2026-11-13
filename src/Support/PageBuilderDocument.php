@@ -86,7 +86,8 @@ final class PageBuilderDocument
     }
 
     /**
-     * Distinct, non-empty `data.media_id` values of all blocks.
+     * Distinct, non-empty `data.media_id` values of all blocks, including the `data.items[].media_id`
+     * of gallery blocks, in document order.
      *
      * @return list<int|string>
      */
@@ -95,10 +96,20 @@ final class PageBuilderDocument
         $ids = [];
 
         foreach ($this->blocks as $block) {
-            $id = is_array($block) && is_array($block['data'] ?? null) ? ($block['data']['media_id'] ?? null) : null;
+            if (! is_array($block) || ! is_array($block['data'] ?? null)) {
+                continue;
+            }
 
-            if ((is_int($id) || is_string($id)) && $id !== '' && ! in_array($id, $ids, true)) {
-                $ids[] = $id;
+            $candidates = [$block['data']['media_id'] ?? null];
+
+            foreach (is_array($block['data']['items'] ?? null) ? $block['data']['items'] : [] as $item) {
+                $candidates[] = is_array($item) ? ($item['media_id'] ?? null) : null;
+            }
+
+            foreach ($candidates as $id) {
+                if ((is_int($id) || is_string($id)) && $id !== '' && ! in_array($id, $ids, true)) {
+                    $ids[] = $id;
+                }
             }
         }
 

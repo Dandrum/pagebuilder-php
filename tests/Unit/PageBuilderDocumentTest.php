@@ -184,6 +184,24 @@ final class PageBuilderDocumentTest extends TestCase
         $this->assertSame([3, 5], $doc->mediaIds());
     }
 
+    public function test_media_ids_include_gallery_items_distinct_and_in_document_order(): void
+    {
+        $doc = new PageBuilderDocument(1, [
+            $this->block(self::A, 'image', ['media_id' => 3]),
+            $this->block(self::B, 'gallery', ['items' => [
+                ['id' => 'i1', 'media_id' => 7],
+                ['id' => 'i2', 'media_id' => 3],
+                ['id' => 'i3', 'media_id' => null],
+                'kaputt',
+                ['id' => 'i4', 'media_id' => 5],
+            ]]),
+            $this->block('c', 'gallery', ['items' => 'nope']),
+            $this->block('d', 'image', ['media_id' => 7]),
+        ]);
+
+        $this->assertSame([3, 7, 5], $doc->mediaIds());
+    }
+
     public function test_plain_text_does_not_merge_words_between_blocks(): void
     {
         $doc = new PageBuilderDocument(1, [

@@ -120,3 +120,14 @@ on top of the trait (e.g. a second `content_draft` column read/written the same 
 idempotent), collapses whitespace, truncates to `max_quote_length` (default 500) and returns null when empty. Edit view is a
 `<textarea wire:model.blur>` (index-bound like the heading input, no Trix/`wire:ignore`, so no id-based sync needed). The
 too-long message is added per quote block index in `pageBuilderMessages()` (a wildcard `data.text.max` key would also hit headings).
+
+## Gallery block and image slots
+
+`Blocks\GalleryBlock` (`gallery`, not an `ImageBearingBlock`): `data.slideshow` + `data.items[{id, media_id|url, caption?}]`. The trait
+generalizes image handling to **slots**: `pageBuilderImageSlot($id)` resolves an id to an image-bearing block (id of the block) or a
+gallery item (id of the item) as `{block, item, urlKey}`; `pageBuilderSlotData()/setPageBuilderSlotData()/pageBuilderSlotPrefix()` read, write and
+name it. Upload, pick, clear, deferred-store, pending-upload and rule code all go through slots, so the public signatures still take a
+`$blockId` (which may be an item id). Gallery-only actions: `add/remove/movePageBuilderGalleryItem`. `pageBuilderImageRulesFor()` builds the
+rules of one slot (also used per item, prefix `pageBuilderBlocks.{i}.data.items.{j}.`); merge with `array_replace`, because the block's own
+`rules()` already set nullable alt/caption/credit keys. Duplicating a block renews item ids; removing it drops the items' pending uploads.
+The editor context holds previews per item id (one `findMany` for the whole document) and `galleryMax`. `GalleryBlock::images()` resolves items for rendering.

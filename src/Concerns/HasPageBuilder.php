@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dandrum\PageBuilder\Concerns;
 
 use Closure;
+use Dandrum\PageBuilder\Blocks\GalleryBlock;
 use Dandrum\PageBuilder\Blocks\QuoteBlock;
 use Dandrum\PageBuilder\Contracts\ImageBearingBlock;
 use Dandrum\PageBuilder\Contracts\ImageMediaResolver;
@@ -174,6 +175,14 @@ trait HasPageBuilder
         $copy = $this->pageBuilderBlocks[$index];
         $copy['id'] = (string) Str::uuid();
 
+        // Gallery items are upload slots keyed by their id: the copy gets its own ids (and no pending uploads).
+        if (is_array($copy['data']['items'] ?? null)) {
+            $copy['data']['items'] = array_map(
+                fn ($item) => is_array($item) ? array_replace($item, ['id' => (string) Str::uuid()]) : $item,
+                $copy['data']['items'],
+            );
+        }
+
         array_splice($this->pageBuilderBlocks, $index + 1, 0, [$copy]);
     }
 
@@ -193,6 +202,11 @@ trait HasPageBuilder
         }
 
         unset($this->pageBuilderUploads[$blockId]);
+
+        foreach ($this->pageBuilderGalleryItems($index) as $item) {
+            unset($this->pageBuilderUploads[(string) ($item['id'] ?? '')]);
+        }
+
         unset($this->pageBuilderBlocks[$index]);
         $this->pageBuilderBlocks = array_values($this->pageBuilderBlocks);
     }
@@ -224,11 +238,10 @@ trait HasPageBuilder
             return;
         }
 
-        $index = $this->findPageBuilderBlockIndex($key);
-        $urlKey = $index === null ? null : $this->pageBuilderImageUrlKey($index);
+        $slot = $this->pageBuilderImageSlot($key);
         $mode = $this->pageBuilderImageOptions()['upload'] ?? 'immediate';
 
-        if ($urlKey === null || $mode === 'off') {
+        if ($slot === null || $mode === 'off') {
             unset($this->pageBuilderUploads[$key]);
 
             return;
@@ -248,8 +261,10 @@ trait HasPageBuilder
 
         if ($mode === 'deferred') {
             // Kept in $pageBuilderUploads until the host calls storePendingPageBuilderUploads().
-            $this->pageBuilderBlocks[$index]['data']['media_id'] = null;
-            $this->pageBuilderBlocks[$index]['data'][$urlKey] = '';
+            $this->setPageBuilderSlotData($slot, array_replace(
+                $this->pageBuilderSlotData($slot),
+                ['media_id' => null, $slot['urlKey'] => ''],
+            ));
 
             return;
         }
@@ -264,25 +279,23 @@ trait HasPageBuilder
      */
     public function uploadPageBuilderBlockImage(string $blockId, TemporaryUploadedFile $file): void
     {
-        $index = $this->findPageBuilderBlockIndex($blockId);
+        $slot = $this->pageBuilderImageSlot($blockId);
 
-        if ($index === null) {
+        if ($slot === null) {
             return;
         }
 
-        if ($this->pageBuilderImageUrlKey($index) === null) {
-            return;
-        }
+        $data = $this->pageBuilderSlotData($slot);
+        $stored = $this->storePageBuilderUpload($blockId, $file, $data);
 
-        $stored = $this->storePageBuilderUpload($blockId, $file, $this->pageBuilderBlocks[$index]['data']);
-
-        $this->pageBuilderBlocks[$index]['data'] = array_replace($this->pageBuilderBlocks[$index]['data'], $stored);
+        $this->setPageBuilderSlotData($slot, array_replace($data, $stored));
     }
 
     /**
      * Host hook: store the uploaded file and return the data keys to merge into the image block
-     * (`['media_id' => …]`, or the URL key: `url` for image, `imageUrl` for image + text). `$data` is
-     * the block's current data (alt, caption, credit as typed by the user). The default delegates to
+     * (`['media_id' => …]`, or the URL key: `url` for image and gallery items, `imageUrl` for image + text).
+     * `$blockId` is the block's id, or the id of a gallery item; `$data` is the block's (or the item's)
+     * current data (alt, caption, credit as typed by the user). The default delegates to
      * `uploadPageBuilderImage()`.
      *
      * @param  array<string, mixed>  $data
@@ -290,8 +303,7 @@ trait HasPageBuilder
      */
     public function storePageBuilderUpload(string $blockId, TemporaryUploadedFile $file, array $data): array
     {
-        $index = $this->findPageBuilderBlockIndex($blockId);
-        $urlKey = $index === null ? null : $this->pageBuilderImageUrlKey($index);
+        $urlKey = $this->pageBuilderImageSlot($blockId)['urlKey'] ?? null;
 
         return [($urlKey ?? 'url') => $this->uploadPageBuilderImage($file)];
     }
@@ -308,25 +320,22 @@ trait HasPageBuilder
     public function storePendingPageBuilderUploads(): void
     {
         foreach ($this->pendingPageBuilderUploads() as $blockId => $file) {
-            $index = $this->findPageBuilderBlockIndex((string) $blockId);
+            $slot = $this->pageBuilderImageSlot((string) $blockId);
 
-            if ($index === null) {
+            if ($slot === null) {
                 continue;
             }
 
-            $stored = $this->storePageBuilderUpload(
-                (string) $blockId,
-                $file,
-                $this->pageBuilderBlocks[$index]['data'] ?? [],
-            );
+            $data = $this->pageBuilderSlotData($slot);
+            $stored = $this->storePageBuilderUpload((string) $blockId, $file, $data);
 
             // The image part is reset (alt/caption/credit went into the stored media); other keys
-            // of the block (an image + text block's html, position, align) stay.
-            $this->pageBuilderBlocks[$index]['data'] = array_replace(
-                $this->pageBuilderBlocks[$index]['data'] ?? [],
-                $this->emptyPageBuilderImageData($this->pageBuilderImageUrlKey($index) ?? 'url'),
+            // of the block (an image + text block's html, position, align) or the item's id stay.
+            $this->setPageBuilderSlotData($slot, array_replace(
+                $data,
+                $this->emptyPageBuilderImageData($slot['urlKey']),
                 $stored,
-            );
+            ));
         }
 
         $this->pageBuilderUploads = [];
@@ -338,11 +347,9 @@ trait HasPageBuilder
     #[On('pagebuilder-image-picked')]
     public function pickPageBuilderImage(string $blockId, int|string $mediaId): void
     {
-        $index = $this->findPageBuilderBlockIndex($blockId);
+        $slot = $this->pageBuilderImageSlot($blockId);
 
-        $urlKey = $index === null ? null : $this->pageBuilderImageUrlKey($index);
-
-        if ($index === null || $urlKey === null) {
+        if ($slot === null) {
             return;
         }
 
@@ -356,46 +363,116 @@ trait HasPageBuilder
         );
 
         if ($validator->fails()) {
-            $this->addError("pageBuilderBlocks.{$index}.data.media_id", (string) $validator->errors()->first('media_id'));
+            $this->addError($this->pageBuilderSlotPrefix($slot).'media_id', (string) $validator->errors()->first('media_id'));
 
             return;
         }
 
+        $prefix = $this->pageBuilderSlotPrefix($slot);
+
         $this->resetErrorBag([
-            "pageBuilderBlocks.{$index}.data.media_id",
-            "pageBuilderBlocks.{$index}.data.alt",
-            "pageBuilderBlocks.{$index}.data.caption",
-            "pageBuilderBlocks.{$index}.data.credit",
+            $prefix.'media_id',
+            $prefix.'alt',
+            $prefix.'caption',
+            $prefix.'credit',
             "pageBuilderUploads.{$blockId}",
         ]);
 
         unset($this->pageBuilderUploads[$blockId]);
 
-        $this->pageBuilderBlocks[$index]['data'] = array_replace(
-            $this->pageBuilderBlocks[$index]['data'],
-            $this->emptyPageBuilderImageData($urlKey),
+        $this->setPageBuilderSlotData($slot, array_replace(
+            $this->pageBuilderSlotData($slot),
+            $this->emptyPageBuilderImageData($slot['urlKey']),
             ['media_id' => is_numeric($mediaId) ? (int) $mediaId : $mediaId],
-        );
+        ));
     }
 
     /**
-     * Removes the picked/uploaded/URL image from an image or image + text block, keeping the block itself.
+     * Removes the picked/uploaded/URL image from an image or image + text block or a gallery item, keeping the block (the slot) itself.
      */
     public function clearPageBuilderImage(string $blockId): void
     {
-        $index = $this->findPageBuilderBlockIndex($blockId);
-        $urlKey = $index === null ? null : $this->pageBuilderImageUrlKey($index);
+        $slot = $this->pageBuilderImageSlot($blockId);
 
-        if ($index === null || $urlKey === null) {
+        if ($slot === null) {
             return;
         }
 
-        $this->pageBuilderBlocks[$index]['data'] = array_replace(
-            $this->pageBuilderBlocks[$index]['data'],
-            $this->emptyPageBuilderImageData($urlKey),
-        );
+        $this->setPageBuilderSlotData($slot, array_replace(
+            $this->pageBuilderSlotData($slot),
+            $this->emptyPageBuilderImageData($slot['urlKey']),
+        ));
 
         unset($this->pageBuilderUploads[$blockId]);
+    }
+
+    /**
+     * Appends an empty image slot to a gallery block. Does nothing once `gallery.max_images` is reached.
+     */
+    public function addPageBuilderGalleryItem(string $blockId): void
+    {
+        $index = $this->findPageBuilderGalleryIndex($blockId);
+
+        if ($index === null || count($this->pageBuilderGalleryItems($index)) >= GalleryBlock::maxImages()) {
+            return;
+        }
+
+        $this->pageBuilderBlocks[$index]['data']['items'] = [
+            ...$this->pageBuilderGalleryItems($index),
+            (new GalleryBlock)->emptyItem(),
+        ];
+    }
+
+    public function removePageBuilderGalleryItem(string $blockId, string $itemId): void
+    {
+        $index = $this->findPageBuilderGalleryIndex($blockId);
+
+        if ($index === null) {
+            return;
+        }
+
+        $items = $this->pageBuilderGalleryItems($index);
+        $position = $this->findPageBuilderGalleryItemIndex($items, $itemId);
+
+        if ($position === null) {
+            return;
+        }
+
+        unset($items[$position]);
+        unset($this->pageBuilderUploads[$itemId]);
+        $this->resetErrorBag();
+
+        $this->pageBuilderBlocks[$index]['data']['items'] = array_values($items);
+    }
+
+    /**
+     * Moves a gallery item by `$offset` (clamped to the list; normally -1 or 1).
+     */
+    public function movePageBuilderGalleryItem(string $blockId, string $itemId, int $offset): void
+    {
+        $index = $this->findPageBuilderGalleryIndex($blockId);
+
+        if ($index === null) {
+            return;
+        }
+
+        $items = $this->pageBuilderGalleryItems($index);
+        $position = $this->findPageBuilderGalleryItemIndex($items, $itemId);
+
+        if ($position === null) {
+            return;
+        }
+
+        $target = max(0, min($position + $offset, count($items) - 1));
+
+        if ($target === $position) {
+            return;
+        }
+
+        $item = array_splice($items, $position, 1);
+        array_splice($items, $target, 0, $item);
+
+        $this->pageBuilderBlocks[$index]['data']['items'] = $items;
     }
 
     /**
@@ -466,10 +543,6 @@ trait HasPageBuilder
     public function pageBuilderRules(): array
     {
         $registry = $this->pageBuilderRegistry();
-        $options = $this->pageBuilderImageOptions();
-        $source = $this->pageBuilderImageSource();
-        $required = array_values(array_intersect(['alt', 'caption', 'credit'], (array) ($options['upload_required'] ?? [])));
-        $maxima = ['alt' => 250, 'caption' => 1000, 'credit' => 255];
 
         $rules = [
             'pageBuilderBlocks' => ['array', 'max:'.(int) config('pagebuilder.max_blocks', 200)],
@@ -489,30 +562,63 @@ trait HasPageBuilder
                 $rules["pageBuilderBlocks.{$i}.data.{$field}"] = $fieldRules;
             }
 
-            if (! $blockType instanceof ImageBearingBlock) {
-                continue;
-            }
+            if ($blockType instanceof GalleryBlock) {
+                $rules["pageBuilderBlocks.{$i}.data.items.*.id"] = ['required', 'string', 'uuid', 'distinct'];
 
-            $id = (string) ($block['id'] ?? '');
-            $prefix = "pageBuilderBlocks.{$i}.data.";
-
-            if ($source === 'media') {
-                if (isset($this->pageBuilderUploads[$id])) {
-                    $rules["pageBuilderUploads.{$id}"] = array_merge(['required'], $this->pageBuilderUploadRules());
-
-                    foreach ($required as $field) {
-                        $rules[$prefix.$field] = ['required', 'string', 'max:'.$maxima[$field]];
-                    }
-                } else {
-                    $rules[$prefix.'media_id'] = array_merge(['required'], $this->pageBuilderMediaIdRules());
+                foreach ($this->pageBuilderGalleryItems($i) as $j => $item) {
+                    $rules = array_replace($rules, $this->pageBuilderImageRulesFor(
+                        "pageBuilderBlocks.{$i}.data.items.{$j}.",
+                        (string) ($item['id'] ?? ''),
+                        'url',
+                    ));
                 }
 
                 continue;
             }
 
-            $rules[$prefix.$blockType->imageUrlKey()] = ['required', 'string'];
-            $rules[$prefix.'alt'] = ['required', 'string', 'max:255'];
+            if (! $blockType instanceof ImageBearingBlock) {
+                continue;
+            }
+
+            $rules = array_replace($rules, $this->pageBuilderImageRulesFor(
+                "pageBuilderBlocks.{$i}.data.",
+                (string) ($block['id'] ?? ''),
+                $blockType->imageUrlKey(),
+            ));
         }
+
+        return $rules;
+    }
+
+    /**
+     * Rules of one image slot (an image block, or a gallery item): a picked image, a pending upload
+     * with its mandatory texts, or (source `url`) the URL plus alt text.
+     *
+     * @return array<string, mixed>
+     */
+    private function pageBuilderImageRulesFor(string $prefix, string $slotId, string $urlKey): array
+    {
+        $options = $this->pageBuilderImageOptions();
+        $required = array_values(array_intersect(['alt', 'caption', 'credit'], (array) ($options['upload_required'] ?? [])));
+        $maxima = ['alt' => 250, 'caption' => 1000, 'credit' => 255];
+        $rules = [];
+
+        if ($this->pageBuilderImageSource() === 'media') {
+            if (isset($this->pageBuilderUploads[$slotId])) {
+                $rules["pageBuilderUploads.{$slotId}"] = array_merge(['required'], $this->pageBuilderUploadRules());
+
+                foreach ($required as $field) {
+                    $rules[$prefix.$field] = ['required', 'string', 'max:'.$maxima[$field]];
+                }
+            } else {
+                $rules[$prefix.'media_id'] = array_merge(['required'], $this->pageBuilderMediaIdRules());
+            }
+
+            return $rules;
+        }
+
+        $rules[$prefix.$urlKey] = ['required', 'string'];
+        $rules[$prefix.'alt'] = ['required', 'string', 'max:255'];
 
         return $rules;
     }
@@ -531,6 +637,12 @@ trait HasPageBuilder
         }
 
         return $quoteMessages + [
+            'pageBuilderBlocks.*.data.items.max' => __('A gallery may contain at most :max images.', ['max' => GalleryBlock::maxImages()]),
+            'pageBuilderBlocks.*.data.items.*.media_id.required' => __('Please choose or upload an image.'),
+            'pageBuilderBlocks.*.data.items.*.url.required' => __('Please choose or upload an image.'),
+            'pageBuilderBlocks.*.data.items.*.alt.required' => __('Alt text is missing.'),
+            'pageBuilderBlocks.*.data.items.*.caption.required' => __('Caption is missing.'),
+            'pageBuilderBlocks.*.data.items.*.credit.required' => __('Photographer or source is missing.'),
             'pageBuilderBlocks.max' => __('At most :max blocks are allowed.'),
             'pageBuilderBlocks.*.type.in' => __('This block type is not available.'),
             'pageBuilderBlocks.*.data.html.max' => __('A paragraph may be at most :max characters long.'),
@@ -577,7 +689,7 @@ trait HasPageBuilder
     /**
      * Everything `<x-pagebuilder::editor>` needs beyond the blocks themselves.
      *
-     * @return array{options: array<string, mixed>, previews: array<string, array<string, string|null>|null>, uploads: array<string, array{previewUrl: string|null, name: string}>, alignment: bool}
+     * @return array{options: array<string, mixed>, previews: array<string, array<string, string|null>|null>, uploads: array<string, array{previewUrl: string|null, name: string}>, alignment: bool, galleryMax: int}
      */
     public function pageBuilderEditorContext(): array
     {
@@ -588,16 +700,27 @@ trait HasPageBuilder
             $ids = (new PageBuilderDocument(1, $this->pageBuilderBlocks))->mediaIds();
             $found = $ids === [] ? [] : $resolver->findMany($ids);
 
-            foreach ($this->pageBuilderBlocks as $block) {
-                $mediaId = $block['data']['media_id'] ?? null;
+            // Image blocks are keyed by the block id, gallery items by the item id.
+            $slots = [];
 
-                if ($mediaId === null || $mediaId === '' || ! $this->isPageBuilderImageBlock($block)) {
+            foreach ($this->pageBuilderBlocks as $i => $block) {
+                if ($this->isPageBuilderImageBlock($block)) {
+                    $slots[(string) $block['id']] = $block['data']['media_id'] ?? null;
+                }
+
+                foreach ($this->pageBuilderGalleryItems($i) as $item) {
+                    $slots[(string) ($item['id'] ?? '')] = $item['media_id'] ?? null;
+                }
+            }
+
+            foreach ($slots as $slotId => $mediaId) {
+                if ($mediaId === null || $mediaId === '') {
                     continue;
                 }
 
                 $media = $found[$mediaId] ?? null;
 
-                $previews[$block['id']] = $media === null
+                $previews[$slotId] = $media === null
                     ? null
                     : ['url' => $resolver->previewUrl($media)] + $resolver->metadata($media);
             }
@@ -621,6 +744,7 @@ trait HasPageBuilder
             'previews' => $previews,
             'uploads' => $uploads,
             'alignment' => (bool) config('pagebuilder.alignment', true),
+            'galleryMax' => GalleryBlock::maxImages(),
         ];
     }
 
@@ -660,7 +784,7 @@ trait HasPageBuilder
     }
 
     /**
-     * Pending uploads that still belong to an image block.
+     * Pending uploads that still belong to an image block or a gallery item.
      *
      * @return array<string, TemporaryUploadedFile>
      */
@@ -673,9 +797,7 @@ trait HasPageBuilder
                 continue;
             }
 
-            $index = $this->findPageBuilderBlockIndex((string) $blockId);
-
-            if ($index !== null && $this->pageBuilderImageUrlKey($index) !== null) {
+            if ($this->pageBuilderImageSlot((string) $blockId) !== null) {
                 $pending[(string) $blockId] = $file;
             }
         }
@@ -718,6 +840,104 @@ trait HasPageBuilder
     private function emptyPageBuilderImageData(string $urlKey): array
     {
         return ['media_id' => null, $urlKey => '', 'alt' => '', 'caption' => '', 'credit' => ''];
+    }
+
+    /**
+     * An "image slot" is whatever holds one image: an image-bearing block (addressed by the block id)
+     * or one gallery item (addressed by the item id). Returns where it lives, or null for an unknown id.
+     *
+     * @return array{block: int, item: int|null, urlKey: string}|null
+     */
+    private function pageBuilderImageSlot(string $slotId): ?array
+    {
+        $index = $this->findPageBuilderBlockIndex($slotId);
+
+        if ($index !== null) {
+            $urlKey = $this->pageBuilderImageUrlKey($index);
+
+            return $urlKey === null ? null : ['block' => $index, 'item' => null, 'urlKey' => $urlKey];
+        }
+
+        foreach ($this->pageBuilderBlocks as $i => $block) {
+            foreach ($this->pageBuilderGalleryItems($i) as $j => $item) {
+                if (($item['id'] ?? null) === $slotId) {
+                    return ['block' => $i, 'item' => $j, 'urlKey' => 'url'];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array{block: int, item: int|null, urlKey: string}  $slot
+     */
+    private function pageBuilderSlotPrefix(array $slot): string
+    {
+        return "pageBuilderBlocks.{$slot['block']}.data.".($slot['item'] === null ? '' : "items.{$slot['item']}.");
+    }
+
+    /**
+     * @param  array{block: int, item: int|null, urlKey: string}  $slot
+     * @return array<string, mixed>
+     */
+    private function pageBuilderSlotData(array $slot): array
+    {
+        $data = $slot['item'] === null
+            ? ($this->pageBuilderBlocks[$slot['block']]['data'] ?? [])
+            : ($this->pageBuilderBlocks[$slot['block']]['data']['items'][$slot['item']] ?? []);
+
+        return is_array($data) ? $data : [];
+    }
+
+    /**
+     * @param  array{block: int, item: int|null, urlKey: string}  $slot
+     * @param  array<string, mixed>  $data
+     */
+    private function setPageBuilderSlotData(array $slot, array $data): void
+    {
+        if ($slot['item'] === null) {
+            $this->pageBuilderBlocks[$slot['block']]['data'] = $data;
+        } else {
+            $this->pageBuilderBlocks[$slot['block']]['data']['items'][$slot['item']] = $data;
+        }
+    }
+
+    /**
+     * The items of the gallery block at `$index` (empty for any other block).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function pageBuilderGalleryItems(int $index): array
+    {
+        $block = $this->pageBuilderBlocks[$index] ?? null;
+
+        if (! is_array($block) || ($block['type'] ?? null) !== GalleryBlock::key() || ! is_array($block['data']['items'] ?? null)) {
+            return [];
+        }
+
+        return array_filter($block['data']['items'], 'is_array');
+    }
+
+    private function findPageBuilderGalleryIndex(string $blockId): ?int
+    {
+        $index = $this->findPageBuilderBlockIndex($blockId);
+
+        return $index !== null && ($this->pageBuilderBlocks[$index]['type'] ?? null) === GalleryBlock::key() ? $index : null;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function findPageBuilderGalleryItemIndex(array $items, string $itemId): ?int
+    {
+        foreach ($items as $position => $item) {
+            if (($item['id'] ?? null) === $itemId) {
+                return $position;
+            }
+        }
+
+        return null;
     }
 
     private function findPageBuilderBlockIndex(string $blockId): ?int

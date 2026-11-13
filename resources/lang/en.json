@@ -66,5 +66,16 @@
     "JPG, PNG · landscape recommended": "JPG, PNG · landscape recommended",
     "Enter quote …": "Enter quote …",
     "Quote text": "Quote text",
-    "A quote may be at most :max characters long.": "A quote may be at most :max characters long."
+    "A quote may be at most :max characters long.": "A quote may be at most :max characters long.",
+    "Gallery": "Gallery",
+    "Show as slideshow": "Show as slideshow",
+    "Add image": "Add image",
+    "This gallery has no images yet.": "This gallery has no images yet.",
+    "Image :n of :total": "Image :n of :total",
+    "Move image :n up": "Move image :n up",
+    "Move image :n down": "Move image :n down",
+    "Remove this image from the gallery?": "Remove this image from the gallery?",
+    "Remove image :n from the gallery": "Remove image :n from the gallery",
+    ":count of :max images": ":count of :max images",
+    "A gallery may contain at most :max images.": "A gallery may contain at most :max images."
 }

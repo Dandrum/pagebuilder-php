@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Dandrum\PageBuilder\Blocks\GalleryBlock;
 use Dandrum\PageBuilder\Blocks\HeadingBlock;
 use Dandrum\PageBuilder\Blocks\ImageBlock;
 use Dandrum\PageBuilder\Blocks\ImageTextBlock;
@@ -22,6 +23,7 @@ return [
         ImageBlock::class,
         ImageTextBlock::class,
         QuoteBlock::class,
+        GalleryBlock::class,
     ],
 
     /*
@@ -69,6 +71,16 @@ return [
         'render_view' => null,
         // Text shown when neither the picker nor an upload is available.
         'notice' => null,
+    ],
+
+    /*
+     * Gallery block (its images follow the `image` options above: source, upload, picker, upload_required).
+     */
+    'gallery' => [
+        'max_images' => 30,
+        // Blade view used by <x-pagebuilder::render> instead of the plain list; receives `images`
+        // (resolved: id, media, url, alt, caption, credit), `slideshow`, `block` and `data`.
+        'render_view' => null,
     ],
 
 ];

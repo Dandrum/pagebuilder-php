@@ -99,7 +99,7 @@ final class HasPageBuilderTest extends TestCase
     {
         $this->expectException(UnknownBlockTypeException::class);
 
-        Livewire::test(EditorHost::class)->call('insertPageBuilderBlock', 'gallery');
+        Livewire::test(EditorHost::class)->call('insertPageBuilderBlock', 'carousel');
     }
 
     /**
@@ -383,7 +383,7 @@ final class HasPageBuilderTest extends TestCase
     public function test_rules_reject_types_outside_the_registry_and_bad_ids(): void
     {
         Livewire::test(EditorHost::class, [
-            'initial' => ['blocks' => [['id' => 'not-a-uuid', 'type' => 'gallery', 'data' => []]]],
+            'initial' => ['blocks' => [['id' => 'not-a-uuid', 'type' => 'carousel', 'data' => []]]],
         ])->call('validateAll')
             ->assertHasErrors(['pageBuilderBlocks.0.id', 'pageBuilderBlocks.0.type']);
     }

@@ -169,6 +169,88 @@ final class RenderTest extends TestCase
         $this->assertStringNotContainsString('<figure', $html);
     }
 
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return array<string, mixed>
+     */
+    private function galleryDocument(array $items, bool $slideshow = false): array
+    {
+        return ['blocks' => [['id' => 'g', 'type' => 'gallery', 'data' => ['slideshow' => $slideshow, 'items' => $items]]]];
+    }
+
+    public function test_a_gallery_falls_back_to_a_plain_list_with_captions_and_credits(): void
+    {
+        $this->useMediaSource();
+        ArrayMediaResolver::$media[2]['url'] = '/m/2.jpg';
+
+        $html = $this->render($this->galleryDocument([
+            ['id' => 'i1', 'media_id' => 1],
+            ['id' => 'i2', 'media_id' => 2, 'caption' => 'Eigene'],
+        ]));
+
+        $this->assertStringContainsString('pb-block--gallery', $html);
+        $this->assertSame(2, substr_count($html, '<img '));
+        $this->assertStringContainsString('src="/m/1.jpg"', $html);
+        $this->assertStringContainsString('Das Rathaus', $html);
+        $this->assertStringContainsString('Max Muster', $html);
+        $this->assertStringContainsString('src="/m/2.jpg"', $html);
+        $this->assertStringContainsString('Eigene', $html);
+    }
+
+    public function test_a_gallery_of_url_images_renders_without_a_resolver(): void
+    {
+        $html = $this->render($this->galleryDocument([
+            ['id' => 'i1', 'url' => '/a.jpg', 'alt' => 'A', 'caption' => 'Erstes'],
+            ['id' => 'i2', 'url' => '/b.jpg', 'alt' => 'B'],
+        ]));
+
+        $this->assertStringContainsString('src="/a.jpg"', $html);
+        $this->assertStringContainsString('src="/b.jpg"', $html);
+        $this->assertStringContainsString('Erstes', $html);
+    }
+
+    public function test_the_gallery_render_hook_receives_the_resolved_images(): void
+    {
+        $this->app['view']->addNamespace('testviews', __DIR__.'/../views');
+        $this->useMediaSource();
+        config()->set('pagebuilder.gallery.render_view', 'testviews::custom-gallery');
+
+        $html = $this->render($this->galleryDocument([
+            ['id' => 'i1', 'media_id' => 1, 'caption' => 'Eigene'],
+            ['id' => 'i2', 'media_id' => 404],
+        ], true));
+
+        $this->assertStringContainsString('gallery:1:on:Rathaus:Eigene:g', $html);
+        $this->assertStringNotContainsString('pb-gallery', $html);
+    }
+
+    public function test_missing_media_are_skipped_and_a_gallery_without_images_renders_nothing(): void
+    {
+        $this->useMediaSource();
+
+        $partial = $this->render($this->galleryDocument([
+            ['id' => 'i1', 'media_id' => 404],
+            ['id' => 'i2', 'media_id' => 1],
+        ]));
+
+        $this->assertSame(1, substr_count($partial, '<img '));
+
+        $this->assertSame('', trim($this->render($this->galleryDocument([['id' => 'i1', 'media_id' => 404]]))));
+        $this->assertSame('', trim($this->render($this->galleryDocument([]))));
+    }
+
+    public function test_the_media_of_the_whole_document_including_galleries_come_from_one_query(): void
+    {
+        $this->useMediaSource();
+
+        $this->render(['blocks' => [
+            ['id' => 'a', 'type' => 'image', 'data' => ['media_id' => 1]],
+            ['id' => 'g', 'type' => 'gallery', 'data' => ['items' => [['id' => 'i1', 'media_id' => 2], ['id' => 'i2', 'media_id' => 1]]]],
+        ]]);
+
+        $this->assertSame(1, ArrayMediaResolver::$calls);
+    }
+
     public function test_the_editor_renders_with_handles_and_labelled_buttons(): void
     {
         $id = '11111111-1111-4111-8111-111111111111';

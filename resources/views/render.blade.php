@@ -10,5 +10,6 @@
         'data' => $blockData,
         'block' => $block,
         'media' => ($blockMediaId !== null && $blockMediaId !== '') ? ($media[$blockMediaId] ?? null) : null,
+        'mediaMap' => $media,
     ])
 @endforeach

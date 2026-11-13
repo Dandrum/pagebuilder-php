@@ -751,3 +751,66 @@
     outline: none;
     box-shadow: var(--pb-focus-ring);
 }
+
+/* Gallery block: slideshow switch and one card per image slot. */
+.pb-gallery-edit {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-3);
+}
+
+.pb-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pb-space-2);
+    cursor: pointer;
+    color: var(--pb-color-text);
+}
+
+.pb-switch-input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--pb-color-accent);
+}
+
+.pb-switch-input:focus-visible {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+.pb-gallery-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-2);
+    border: 1px solid var(--pb-color-hairline);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-surface);
+    padding: var(--pb-space-3);
+}
+
+.pb-gallery-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pb-space-2);
+}
+
+.pb-gallery-item-title {
+    color: var(--pb-color-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.pb-gallery-item-actions {
+    display: flex;
+    gap: var(--pb-space-1);
+}
+
+.pb-gallery-footer {
+    align-items: center;
+}
+
+.pb-gallery-count {
+    color: var(--pb-color-muted);
+    font-size: 0.8125rem;
+}

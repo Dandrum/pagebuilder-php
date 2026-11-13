@@ -1,7 +1,7 @@
 # livewire-pagebuilder
 
 Laravel Livewire block-based content builder. Stores a block list (`paragraph`, `heading`,
-`image`, `image_text`, `quote`) as a single JSON document on any model column, so it can be plugged into
+`image`, `image_text`, `quote`, `gallery`) as a single JSON document on any model column, so it can be plugged into
 any Livewire component without forcing a base class.
 
 Requires Laravel 11-13 and Livewire 3-4 (PHP 8.2+). Drag & drop needs Livewire 4 (`wire:sort`);
@@ -109,7 +109,7 @@ redeclaring them on `.pagebuilder` (editor) or `.pb-content` (output):
 
 | Key | Default | Meaning |
 |---|---|---|
-| `blocks` | all five | Registered block type classes |
+| `blocks` | all six | Registered block type classes |
 | `max_blocks` | `200` | Validation cap for the number of blocks |
 | `max_html_length` | `20000` | Validation cap for one paragraph's HTML |
 | `max_quote_length` | `500` | Validation cap and storage truncation for a quote block's plain text |
@@ -123,6 +123,8 @@ redeclaring them on `.pagebuilder` (editor) or `.pb-content` (output):
 | `image.upload_required` | `['alt']` | Subset of `alt`, `caption`, `credit` required with a new upload |
 | `image.render_view` | `null` | View used by `<x-pagebuilder::render>` for image blocks and the image side of image + text blocks (receives `data`, `block`, `media`) |
 | `image.notice` | `null` | Text shown when neither picker nor upload is available |
+| `gallery.max_images` | `30` | Maximum images per gallery (validation, normalization, the editor's add button) |
+| `gallery.render_view` | `null` | View used instead of the plain list; receives `images` (resolved: `id`, `media`, `url`, `alt`, `caption`, `credit`), `slideshow`, `block`, `data` |
 
 Override `pageBuilderImageOptions()` on the component to change these per component.
 
@@ -231,3 +233,16 @@ class="pb-quote"><p>text</p></blockquote></figure>`, escaped. Style it with `--p
 (on `.pb-content`; the editor hint reads `--pb-quote-block-accent`/`-font` too). It is deliberately distinct from
 the subtle inline `blockquote` inside `.pb-prose` (`--pb-quote-border`/`--pb-quote-color`). A too-long
 text uses the message "A quote may be at most :max characters long.".
+
+## Gallery block
+
+`gallery` holds `data.slideshow` (bool, default false) and an ordered `data.items[]`; every item has its own `id`
+(uuid), `media_id` (or `url` with `image.source` `url`) and an optional `caption` (per-usage override). Images use the
+same options (`image.*`: source, upload mode, picker, `upload_required`) and the same editor field as an image block, so a
+host's picker and upload hooks work unchanged: the id passed as `blockId` (to `pagebuilder-pick-image`,
+`storePageBuilderUpload()`, `pageBuilderUploads.{id}`) is the **item** id. Editor actions: `addPageBuilderGalleryItem($blockId)`
+(no-op at `gallery.max_images`), `removePageBuilderGalleryItem($blockId, $itemId)`, `movePageBuilderGalleryItem($blockId, $itemId, $offset)`.
+Normalizing drops empty items, keeps/renews item ids, truncates to the maximum and drops a gallery without images.
+`PageBuilderDocument::mediaIds()` includes the items' `media_id`. The renderer resolves the items (missing media are skipped) and
+either includes `gallery.render_view` or prints a JS-free `<div class="pb-block pb-block--gallery"><ul class="pb-gallery">` of figures
+(`--pb-gallery-gap`). The slideshow/lightbox behaviour is the host's job (hook view).

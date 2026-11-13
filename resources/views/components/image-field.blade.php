@@ -1,8 +1,10 @@
-@props(['block', 'index', 'context' => [], 'urlKey' => 'url'])
+@props(['block', 'index', 'context' => [], 'urlKey' => 'url', 'prefix' => null, 'clearable' => true])
 
 {{--
     The image part of an image-bearing block (image, image + text): preview, upload / library
     picker and the alt / caption / credit row. All states of `pagebuilder.image` live here.
+    For a gallery item `block` is `['id' => item id, 'data' => item]` and `prefix` points at the item
+    (`pageBuilderBlocks.{i}.data.items.{j}.`); `clearable` = false hides "Remove image" (the item itself is removed instead).
 --}}
 @php
     $id = $block['id'];
@@ -15,7 +17,7 @@
     $mediaId = $data['media_id'] ?? null;
     $hasMedia = $mediaId !== null && $mediaId !== '';
     $preview = $hasMedia ? ($context['previews'][$id] ?? null) : null;
-    $prefix = 'pageBuilderBlocks.'.$index.'.data.';
+    $prefix = $prefix ?? 'pageBuilderBlocks.'.$index.'.data.';
     $picker = ! empty($options['picker']);
     $pickEvent = "\$dispatch('pagebuilder-pick-image', { blockId: '".$id."' })";
     $hasImage = $source === 'url' ? filled($data[$urlKey] ?? null) : ($pending !== null || $hasMedia);
@@ -52,7 +54,9 @@
             @if($picker)
                 <button type="button" class="pb-button" wire:click="{{ $pickEvent }}">{{ __('Replace') }}</button>
             @endif
-            <button type="button" class="pb-button pb-button--danger" wire:click="clearPageBuilderImage('{{ $id }}')">{{ __('Remove image') }}</button>
+            @if($clearable)
+                <button type="button" class="pb-button pb-button--danger" wire:click="clearPageBuilderImage('{{ $id }}')">{{ __('Remove image') }}</button>
+            @endif
         </div>
     @endif
 

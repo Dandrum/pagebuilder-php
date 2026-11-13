@@ -66,5 +66,16 @@
     "JPG, PNG · landscape recommended": "JPG, PNG · Querformat empfohlen",
     "Enter quote …": "Zitat eingeben …",
     "Quote text": "Zitattext",
-    "A quote may be at most :max characters long.": "Ein Zitat darf höchstens :max Zeichen lang sein."
+    "A quote may be at most :max characters long.": "Ein Zitat darf höchstens :max Zeichen lang sein.",
+    "Gallery": "Galerie",
+    "Show as slideshow": "Als Slideshow anzeigen",
+    "Add image": "Bild hinzufügen",
+    "This gallery has no images yet.": "Diese Galerie enthält noch keine Bilder.",
+    "Image :n of :total": "Bild :n von :total",
+    "Move image :n up": "Bild :n nach oben",
+    "Move image :n down": "Bild :n nach unten",
+    "Remove this image from the gallery?": "Dieses Bild aus der Galerie entfernen?",
+    "Remove image :n from the gallery": "Bild :n aus der Galerie entfernen",
+    ":count of :max images": ":count von :max Bildern",
+    "A gallery may contain at most :max images.": "Eine Galerie darf höchstens :max Bilder enthalten."
 }

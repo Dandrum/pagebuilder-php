@@ -21,3 +21,6 @@ vendor/bin/pint --test       # style
 - Blade tests that render views using `@error` outside a Livewire render need
   `view()->share('errors', new ViewErrorBag)`.
 - File uploads in tests use `UploadedFile::fake()->image(...)` (needs ext-gd).
+- Gallery: `Unit/GalleryBlockTest` (normalize, caps, ids, urls), `Feature/GalleryEditorTest` (EditorHost + ArrayMediaResolver; item ids are the
+  slot keys for `pageBuilderUploads`/picks), gallery cases in `Feature/RenderTest` (hook view `tests/views/custom-gallery.blade.php`).
+  Tests that need an "unregistered" block type use `carousel`.

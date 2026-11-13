@@ -22,7 +22,7 @@ Everything is exercised through `composer.json`'s own `require`/`require-dev`.
 - **Block type registry** (`src/Support/BlockRegistry.php`, a singleton built from
   `config('pagebuilder.blocks')`) — each block type is a class implementing
   `src/Contracts/BlockType.php`. New block types are added via config, not by forking the
-  package. The five shipped types live in `src/Blocks/`.
+  package. The six shipped types live in `src/Blocks/`.
 - **Document model** (`src/Support/PageBuilderDocument.php`) — the only place that knows the
   on-disk `{version, blocks}` JSON shape; encodes/decodes it.
 - **Two Blade entry points**: `<x-pagebuilder::editor>` (admin-facing editor UI) and
