@@ -3,6 +3,6 @@
 @php
     $level = max(2, min(4, (int) ($data['level'] ?? 2)));
     $tag = 'h'.$level;
-    $align = $data['align'] ?? 'left';
+    $align = config('pagebuilder.alignment', true) ? ($data['align'] ?? 'left') : null;
 @endphp
-<{{ $tag }} class="pagebuilder-block pagebuilder-block--heading text-{{ $align }}">{{ $data['text'] ?? '' }}</{{ $tag }}>
+<{{ $tag }} class="pb-block pb-block--heading {{ $align ? 'pb-align-'.$align : '' }}">{{ $data['text'] ?? '' }}</{{ $tag }}>

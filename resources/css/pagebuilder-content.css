@@ -1,0 +1,233 @@
+/*
+ * dandrum/livewire-pagebuilder - rendered output.
+ *
+ * Plain CSS, no Tailwind. Import it from the host's stylesheet, wrap the rendered blocks in
+ * an element with the `pb-content` class and override the --pb-content-* custom properties
+ * on `.pb-content` after the import.
+ */
+
+.pb-content {
+    --pb-content-font: inherit;
+    --pb-content-color: inherit;
+    --pb-content-measure: 70ch;
+    --pb-content-gap: 1rem;
+    --pb-link: #2563eb;
+    --pb-caption-color: #64748b;
+    --pb-content-radius: 6px;
+    --pb-heading-font: var(--pb-content-font);
+    --pb-quote-border: #cbd5e1;
+    --pb-quote-color: inherit;
+
+    font-family: var(--pb-content-font);
+    color: var(--pb-content-color);
+    max-width: var(--pb-content-measure);
+}
+
+.pb-content .pb-block {
+    margin: 0 0 var(--pb-content-gap);
+}
+
+.pb-prose :where(p, div, ul, ol, h1, h2, h3, h4, h5, h6, blockquote) {
+    margin: 0;
+}
+
+.pb-prose :where(p, div, ul, ol, h1, h2, h3, h4, h5, h6, blockquote) + :where(p, div, ul, ol, h1, h2, h3, h4, h5, h6, blockquote) {
+    margin-top: var(--pb-content-gap);
+}
+
+.pb-prose :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--pb-heading-font);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.pb-prose :where(h1) {
+    font-size: 2em;
+}
+
+.pb-prose :where(h2) {
+    font-size: 1.6em;
+}
+
+.pb-prose :where(h3) {
+    font-size: 1.3em;
+}
+
+.pb-prose :where(h4) {
+    font-size: 1.15em;
+}
+
+.pb-prose :where(h5, h6) {
+    font-size: 1em;
+}
+
+.pb-prose :where(blockquote) {
+    padding-left: 1rem;
+    border-left: 4px solid var(--pb-quote-border);
+    color: var(--pb-quote-color);
+    font-style: italic;
+}
+
+.pb-prose :where(ul) {
+    padding-left: 1.5rem;
+    list-style: disc;
+}
+
+.pb-prose :where(ol) {
+    padding-left: 1.5rem;
+    list-style: decimal;
+}
+
+.pb-prose :where(a) {
+    color: var(--pb-link);
+    text-decoration: underline;
+}
+
+.pb-prose :where(strong) {
+    font-weight: 700;
+}
+
+.pb-prose :where(em) {
+    font-style: italic;
+}
+
+.pb-figure {
+    margin: 0 0 var(--pb-content-gap);
+}
+
+.pb-figure :where(img, picture) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--pb-content-radius);
+}
+
+.pb-figure :where(figcaption) {
+    margin-top: 0.5rem;
+    color: var(--pb-caption-color);
+    font-size: 0.875rem;
+}
+
+/* Image + text: image beside the text, stacked below 40rem. */
+
+.pb-block--image-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-content-gap);
+}
+
+.pb-block--image-text .pb-figure {
+    margin: 0;
+}
+
+@media (min-width: 40rem) {
+    .pb-block--image-text {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+
+    .pb-block--image-text > .pb-image-text-media {
+        flex: 0 0 40%;
+        min-width: 0;
+    }
+
+    .pb-block--image-text > .pb-image-text-body {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .pb-block--image-right {
+        flex-direction: row-reverse;
+    }
+}
+
+.pb-align-left {
+    text-align: left;
+}
+
+.pb-align-center {
+    text-align: center;
+}
+
+.pb-align-right {
+    text-align: right;
+}
+
+.pb-align-justify {
+    text-align: justify;
+}
+
+/* Pull quote block: large serif text, accent bar and a big opening mark. */
+
+.pb-content {
+    --pb-quote-block-font: var(--pb-heading-font);
+    --pb-quote-block-color: inherit;
+    --pb-quote-block-accent: #475569;
+    --pb-quote-block-size: 1.75rem;
+    --pb-quote-block-margin: 2rem;
+}
+
+.pb-content .pb-block--quote {
+    position: relative;
+    margin: var(--pb-quote-block-margin) 0;
+    padding: 0.25rem 0 0.25rem 1.5rem;
+    border-left: 6px solid var(--pb-quote-block-accent);
+}
+
+.pb-block--quote::before {
+    content: "\201C";
+    display: block;
+    height: 2.75rem;
+    margin-bottom: -0.25rem;
+    color: var(--pb-quote-block-accent);
+    font-family: var(--pb-quote-block-font);
+    font-size: 5rem;
+    line-height: 1;
+}
+
+.pb-block--quote .pb-quote {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: var(--pb-quote-block-color);
+    font-family: var(--pb-quote-block-font);
+    font-size: var(--pb-quote-block-size);
+    font-style: italic;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.pb-block--quote .pb-quote p {
+    margin: 0;
+}
+
+/* Gallery fallback (no `pagebuilder.gallery.render_view`): a plain grid of figures. */
+.pb-content {
+    --pb-gallery-gap: 0.75rem;
+}
+
+.pb-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: var(--pb-gallery-gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pb-gallery figure {
+    margin: 0;
+}
+
+.pb-gallery img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--pb-content-radius);
+}
+
+.pb-gallery figcaption {
+    margin-top: 0.25rem;
+    color: var(--pb-caption-color);
+    font-size: 0.875rem;
+}

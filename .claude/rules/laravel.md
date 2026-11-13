@@ -37,25 +37,26 @@
 
 ## Alpine / Trix integration
 
-These are **host-provided globals**, not bundled — the package has no `package.json`, no Vite
-config, no build step. Blade views assume `Alpine` and `trix-editor` (custom element) already exist
-on `window` because the host app's own asset bundle loaded them (see `dandrum/DotaLan`'s
-`resources/js/app.js` for the reference setup: `import 'trix'`, `import 'alpinejs'`). Do not add an
-asset pipeline to this package to work around that — it would duplicate what every realistic host
-already has.
+Alpine comes with Livewire; **Trix** is host-provided (`import 'trix'` + `trix/dist/trix.css`), the
+package has no `package.json` or build step. The package does ship plain CSS files
+(`resources/css/pagebuilder-editor.css`, `pagebuilder-content.css`) that the host imports.
 
-- Rich text blocks (`paragraph`, `image_text`) use the same `x-data` + `@entangle` + `wire:ignore`
-  + `trix-change` pattern as `dandrum/DotaLan`'s own `resources/views/components/form-fields/
-  textarea.blade.php` — keep new rich-text-ish blocks consistent with that pattern rather than
-  inventing a different one.
-- Reordering (`<x-pagebuilder::editor>`) is plain Livewire round-trips — move-up/move-down icon
-  buttons call `movePageBuilderBlockUp()`/`movePageBuilderBlockDown()` directly, no Alpine/JS state
-  of its own and no drag library. This was a deliberate choice over SortableJS: a drag handle that
-  also has to host clickable action buttons (duplicate/delete) is a real interaction conflict
-  (drag-start hijacking a button tap), and arrow buttons sidestep it entirely. `Sortable` is **not**
-  a host requirement of this package — don't reintroduce that assumption without re-adding the
-  actual drag wiring.
+- Rich text (`components/rich-text.blade.php`, used by `paragraph` and `image-text`): one
+  `<trix-toolbar>` per block with bold, italic, headings H1-H6, link, bullet/number list and quote (inline SVG/text buttons, no Trix icon classes), attachments blocked. Trix only knows `heading1`: the component's `ensureTrix()` (Alpine `x-init`, before the first `loadHTML`) adds `heading2`..`heading6` to `Trix.config.blockAttributes` - no package JS file
+  (`trix-file-accept.prevent`). **No `@entangle`**: after a reorder an index-bound Alpine component
+  would write into another block. Instead every `trix-change` (debounced 250 ms) looks the block up by
+  id (`$wire.pageBuilderBlocks.findIndex(b => b.id === id)`) and does a deferred
+  `$wire.$set('pageBuilderBlocks.'+i+'.data.html', trix.value, false)`; `trix-initialize` loads the HTML
+  by the same lookup. Use `trix.value` (the serialized document), never `trix.innerHTML`.
+- Reordering uses Livewire 4 `wire:sort` with a dedicated grip (`wire:sort:handle`) - see
+  `architecture.md`. `Sortable` is not a host requirement; Livewire bundles it.
 
+## CSS conventions
+
+Package views carry no Tailwind classes, only `pb-*` classes styled by the shipped CSS. Selectors are
+single-class (`:where()` inside `.pb-prose`) for low specificity, not in a cascade layer. Colors and
+spacing are `--pb-*` custom properties declared on `.pagebuilder` / `.pb-content`; hosts override them
+after importing the CSS. Don't add `@apply` or utility classes to the package views.
 ## Anonymous Blade components
 
 `resources/views/components/editor.blade.php`, `resources/views/components/insert-row.blade.php`,
@@ -64,3 +65,12 @@ and every `resources/views/blocks/edit|render/*` view are **anonymous** componen
 `src/View/Components/Render.php`) only when a view genuinely needs constructor logic (as `Render`
 does, to decode the JSON before rendering). Don't promote a simple partial to a class component "for
 consistency" — the package deliberately keeps that to one class.
+
+## Alignment and resizing
+
+`components/align-tools.blade.php` (left/center/right icon buttons, `wire:ignore`, Alpine) replaces the old
+align `<select>` in the paragraph and image + text editors and is shown only when `context.alignment` is true.
+It reads/writes `data.align` by block id (`$wire.$set(..., false)`), never by index entangle; `rich-text`
+(`alignable` prop) binds `text-align` on the `trix-editor` to the same value. The Trix area is
+`resize: vertical` (`--pb-editor-min-height`); it sits in `wire:ignore wire:sort:ignore`, so the dragged
+height survives re-renders and does not start a block drag.

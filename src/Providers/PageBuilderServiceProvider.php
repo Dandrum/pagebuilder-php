@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Dandrum\PageBuilder\Providers;
 
+use Dandrum\PageBuilder\Contracts\HtmlSanitizer;
+use Dandrum\PageBuilder\Contracts\ImageMediaResolver;
 use Dandrum\PageBuilder\Support\BlockRegistry;
+use Dandrum\PageBuilder\Support\PurifierHtmlSanitizer;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
@@ -23,6 +26,14 @@ final class PageBuilderServiceProvider extends ServiceProvider
 
             return $registry;
         });
+
+        $this->app->singleton(HtmlSanitizer::class, PurifierHtmlSanitizer::class);
+
+        $resolver = config('pagebuilder.image.resolver');
+
+        if (is_string($resolver) && $resolver !== '') {
+            $this->app->singleton(ImageMediaResolver::class, $resolver);
+        }
     }
 
     public function boot(): void
@@ -53,6 +64,10 @@ final class PageBuilderServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../../config/pagebuilder.php' => config_path('pagebuilder.php'),
         ], 'pagebuilder-config');
+
+        $this->publishes([
+            __DIR__.'/../../resources/css' => $this->app->resourcePath('css/vendor/pagebuilder'),
+        ], 'pagebuilder-assets');
 
         $this->publishes([
             __DIR__.'/../../resources/views' => $this->app->resourcePath('views/vendor/pagebuilder'),

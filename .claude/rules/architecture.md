@@ -36,7 +36,7 @@ explicit instead of automatic:
 4. User interactions call trait methods directly via `wire:click`/`wire:model` (same Livewire
    component instance — the editor is a plain Blade component included in the host's own view, not
    a nested Livewire component, so there is no cross-component data round-trip).
-5. On submit, host calls `$this->validatePageBuilderBlocks()` then persists
+5. On submit, host validates (`pageBuilderRules()` merged into its own rules, or `validatePageBuilderBlocks()`) then persists
    `$this->getPageBuilderDocumentJson()` (JSON string) or `getPageBuilderDocumentArray()` (plain
    array, for a model casting the column to `array`/`json`) onto its own model and saves it.
 
@@ -55,25 +55,42 @@ explicit instead of automatic:
 - **Remove** (`removePageBuilderBlock(string $blockId)`): before removing, if the block's `data`
   has a `url` or `imageUrl`, calls `deletePageBuilderImage()` (no-op by default — override in the
   host to actually clean up storage, e.g. S3).
-- **Reorder** (`movePageBuilderBlockUp(string $blockId)` / `movePageBuilderBlockDown(string
-  $blockId)`): swaps the block with its immediate neighbor; a no-op at either end of the list. The
-  shipped editor has no drag-and-drop — each block shows explicit move-up/move-down icon buttons
-  instead, which avoids the interaction conflict of a drag handle that also has to contain clickable
-  action buttons. `reorderPageBuilderBlocks(array $orderedIds)` (re-keys `$pageBuilderBlocks` to
-  match an arbitrary id order) still exists on the trait and is fully functional, just not called by
-  `<x-pagebuilder::editor>` — it's there for a host that wants to wire up its own drag-and-drop.
-- **Image upload** (`updatedPageBuilderUploads($value, $key)`): `$pageBuilderUploads` is an
-  **array** property (`pageBuilderUploads.{blockId}`), not a single scalar — this is deliberate so
-  multiple image/image_text blocks can each have their own `<input type="file"
-  wire:model="pageBuilderUploads.{{ $block['id'] }}">` without a shared "which block is this
-  upload for" tracking property and the request-ordering race that would create. Livewire invokes
-  `updated{Property}($value, $key)` with `$key` as the nested path remainder (`{blockId}`), which
-  is how the hook knows which block to attach the uploaded URL to. Don't collapse this back to a
-  single shared upload property.
-- **Validate** (`validatePageBuilderBlocks()`): builds a `pageBuilderBlocks.{i}.data.{field}` rule
-  set per block from that block type's `rules()` and calls the host's own `$this->validate()` —
-  errors surface as normal Livewire validation errors, `@error('pageBuilderBlocks.0.data.alt')`
-  works in the editor's block-edit views.
+- **Reorder**: three paths, all by block id. Drag & drop is Livewire 4's `wire:sort` on the list
+  in `editor.blade.php`: each `wire:sort:item` wraps the block *and its trailing insert row* (the
+  leading insert row sits outside the sortable container, so Sortable's `newIndex` equals the block
+  index) and `sortPageBuilderBlock(string $blockId, int $position)` moves it (position clamped, unknown
+  id ignored). Only the dedicated grip button carries `wire:sort:handle`, so the action buttons and the
+  Trix area (`wire:sort:ignore`) never start a drag. `movePageBuilderBlockUp/Down` remain as the
+  keyboard / non-drag alternative (disabled at the edges). `reorderPageBuilderBlocks(array $ids)` is a
+  public API the editor does not call.
+- **Pick** (`#[On('pagebuilder-image-picked')] pickPageBuilderImage($blockId, $mediaId)`): the host's
+  picker answers the editor's `pagebuilder-pick-image` event. Unknown block ids are ignored; the media id
+  is validated with `pageBuilderMediaIdRules()`; failure -> error on `...data.media_id`, nothing
+  assigned. Success sets `media_id`, clears alt/caption/credit and drops a pending upload.
+  Pick, upload, clear and the image validation rules apply to every block implementing
+  `Contracts\ImageBearingBlock` (`image`, `image_text`); `imageUrlKey()` (`url` / `imageUrl`) names the URL key. A
+  deferred upload stored by `storePendingPageBuilderUploads()` only resets the image keys, so an image + text
+  block keeps its html/position/align.
+- **Image upload** (`updatedPageBuilderUploads($value, $key)`): `$pageBuilderUploads` is an **array**
+  property (`pageBuilderUploads.{blockId}`), one entry per block - don't collapse it to a single
+  scalar. The hook validates the file with `pageBuilderUploadRules()` first (invalid files are
+  dropped), ignores everything when `image.upload = off` or the key is no image block, and then
+  either stores right away (`immediate`, via `storePageBuilderUpload()`) or keeps the file
+  (`deferred`) until the host calls `storePendingPageBuilderUploads()` after validation/authorization.
+- **Validate**: `pageBuilderRules()` / `pageBuilderMessages()` build the rules without validating
+  (structure: block count, uuid ids, registered type; per-block `rules()`; image rules that depend on
+  the source and on pending uploads) so the host can merge them into its own `validate()`.
+  `validatePageBuilderBlocks()` is the stand-alone convenience.
+- **Normalize**: `PageBuilderDocument::normalized()` (applied by `getPageBuilderDocumentArray/Json()`)
+  drops malformed / unregistered / duplicate-id blocks and lets each `ContentAwareBlock::normalize()`
+  whitelist keys, sanitize HTML (`Contracts\HtmlSanitizer`, default `PurifierHtmlSanitizer`) or return
+  null to drop the block. Idempotent. `mediaIds()` / `plainText()` read a document without rendering.
+
+## Contracts
+
+`BlockType` (required), `ContentAwareBlock` (optional: `normalize`, `plainText`), `HtmlSanitizer`,
+`ImageMediaResolver` (`findMany`, `previewUrl`, `metadata`; bound from `pagebuilder.image.resolver`).
+`<x-pagebuilder::render>` resolves all `media_id`s of a document with one `findMany()` call.
 
 ## Adding a new block type
 
@@ -96,3 +113,21 @@ Not implemented. The trait only holds one in-memory `$pageBuilderBlocks` array p
 — there is no separate draft column, no history stack. If a host app needs either, it's additive
 on top of the trait (e.g. a second `content_draft` column read/written the same way via a second
 `PageBuilderDocument`), not a change to the trait's core save flow.
+
+## Quote block
+
+`Blocks\QuoteBlock` (`quote`): `data.text` only, plain text. `normalize()` strips tags/entity-encoded tags (loop until stable,
+idempotent), collapses whitespace, truncates to `max_quote_length` (default 500) and returns null when empty. Edit view is a
+`<textarea wire:model.blur>` (index-bound like the heading input, no Trix/`wire:ignore`, so no id-based sync needed). The
+too-long message is added per quote block index in `pageBuilderMessages()` (a wildcard `data.text.max` key would also hit headings).
+
+## Gallery block and image slots
+
+`Blocks\GalleryBlock` (`gallery`, not an `ImageBearingBlock`): `data.slideshow` + `data.items[{id, media_id|url, caption?}]`. The trait
+generalizes image handling to **slots**: `pageBuilderImageSlot($id)` resolves an id to an image-bearing block (id of the block) or a
+gallery item (id of the item) as `{block, item, urlKey}`; `pageBuilderSlotData()/setPageBuilderSlotData()/pageBuilderSlotPrefix()` read, write and
+name it. Upload, pick, clear, deferred-store, pending-upload and rule code all go through slots, so the public signatures still take a
+`$blockId` (which may be an item id). Gallery-only actions: `add/remove/movePageBuilderGalleryItem`. `pageBuilderImageRulesFor()` builds the
+rules of one slot (also used per item, prefix `pageBuilderBlocks.{i}.data.items.{j}.`); merge with `array_replace`, because the block's own
+`rules()` already set nullable alt/caption/credit keys. Duplicating a block renews item ids; removing it drops the items' pending uploads.
+The editor context holds previews per item id (one `findMany` for the whole document) and `galleryMax`. `GalleryBlock::images()` resolves items for rendering.

@@ -1,0 +1,1 @@
+gallery:{{ count($images) }}:{{ $slideshow ? 'on' : 'off' }}:{{ $images[0]['alt'] }}:{{ $images[0]['caption'] }}:{{ $block['id'] }}

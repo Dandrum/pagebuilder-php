@@ -1,0 +1,836 @@
+/*
+ * dandrum/livewire-pagebuilder - editor UI.
+ *
+ * Plain CSS, no Tailwind. Import it from the host's own stylesheet and override the
+ * --pb-* custom properties by redeclaring them on `.pagebuilder` after the import.
+ * Rules use single-class selectors (low specificity) and are not in a cascade layer.
+ * (Exception: the Trix toolbar rules use two classes to beat trix.css.)
+ */
+
+.pagebuilder {
+    --pb-color-text: #1f2937;
+    --pb-color-muted: #64748b;
+    --pb-color-border: #cbd5e1;
+    --pb-color-surface: #fff;
+    --pb-color-surface-muted: #f8fafc;
+    --pb-color-accent: #2563eb;
+    --pb-color-on-accent: #fff;
+    --pb-color-danger: #dc2626;
+    --pb-focus-ring: 0 0 0 2px #2563eb;
+    --pb-radius: 6px;
+    --pb-space-1: 0.25rem;
+    --pb-space-2: 0.5rem;
+    --pb-space-3: 0.75rem;
+    --pb-space-4: 1rem;
+    --pb-space-5: 1.5rem;
+    --pb-space-6: 2rem;
+    --pb-font: inherit;
+
+    /* Form controls (inputs, selects, the Trix area) are white. */
+    --pb-color-input: #fff;
+    --pb-input-height: 2.5rem;
+    /* Block cards, hairlines, toolbar and image placeholder. */
+    --pb-color-card: #f8fafc;
+    --pb-color-hairline: #e2e8f0;
+    --pb-color-toolbar: #f1f5f9;
+    --pb-color-placeholder: #e2e8f0;
+    --pb-radius-card: 10px;
+    /* Trix area: starting height; the user can drag it taller (resize: vertical). */
+    --pb-editor-min-height: 9rem;
+
+    color: var(--pb-color-text);
+    font-family: var(--pb-font);
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-input);
+    padding: var(--pb-space-2) var(--pb-space-3) var(--pb-space-3);
+}
+
+.pb-list {
+    display: block;
+}
+
+.pb-item {
+    display: block;
+}
+
+.pb-block-frame {
+    border: 1px solid var(--pb-color-hairline);
+    border-radius: var(--pb-radius-card);
+    background: var(--pb-color-card);
+    padding: var(--pb-space-3);
+}
+
+.pb-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pb-space-2);
+    margin-bottom: var(--pb-space-2);
+}
+
+.pb-block-title {
+    display: flex;
+    align-items: center;
+    gap: var(--pb-space-2);
+}
+
+.pb-block-label {
+    color: var(--pb-color-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.pb-block-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.pb-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--pb-radius);
+    background: transparent;
+    color: var(--pb-color-muted);
+    cursor: pointer;
+}
+
+.pb-icon-button svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.pb-icon-button:hover {
+    background: var(--pb-color-hairline);
+    color: var(--pb-color-text);
+}
+
+.pb-icon-button:focus-visible,
+.pb-button:focus-visible,
+.pb-insert-button:focus-visible {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+.pb-icon-button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.pb-icon-button--danger,
+.pb-icon-button--danger:hover {
+    color: var(--pb-color-danger);
+}
+
+.pb-handle {
+    cursor: grab;
+    touch-action: none;
+}
+
+.pb-handle:active {
+    cursor: grabbing;
+}
+
+/* "+ Absatz" / "+ Bild" / "+ Bild + Text" between the blocks: round pills with hairlines. */
+
+.pb-insert-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pb-space-2);
+    padding: var(--pb-space-2) 0;
+}
+
+.pb-insert-line {
+    flex: 1 1 1rem;
+    height: 1px;
+    background: var(--pb-color-hairline);
+}
+
+.pb-insert-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pb-space-1);
+    height: 1.75rem;
+    padding: 0 0.625rem;
+    border: 1px solid var(--pb-color-hairline);
+    border-radius: 999px;
+    background: var(--pb-color-input);
+    color: var(--pb-color-text);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pb-insert-button svg {
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+.pb-insert-button:hover {
+    border-color: var(--pb-color-accent);
+    color: var(--pb-color-accent);
+}
+
+/* Block bodies and form controls */
+
+.pb-block-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-3);
+}
+
+.pb-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-2);
+}
+
+.pb-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pb-space-3);
+}
+
+.pb-block-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pb-space-3);
+}
+
+.pb-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-1);
+    min-width: 0;
+}
+
+.pb-label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.pb-required {
+    color: var(--pb-color-danger);
+}
+
+.pb-input,
+.pb-select {
+    box-sizing: border-box;
+    width: 100%;
+    height: var(--pb-input-height);
+    padding: 0 0.625rem;
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-input);
+    color: var(--pb-color-text);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 400;
+}
+
+.pb-select {
+    width: auto;
+    align-self: flex-start;
+}
+
+.pb-input--readonly {
+    background: var(--pb-color-card);
+    color: var(--pb-color-muted);
+    cursor: default;
+}
+
+.pb-input:focus,
+.pb-select:focus {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+.pb-button {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--pb-space-1) var(--pb-space-3);
+    min-height: 2rem;
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-input);
+    color: var(--pb-color-text);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pb-button:hover {
+    background: var(--pb-color-surface-muted);
+}
+
+.pb-button--danger {
+    border-color: var(--pb-color-danger);
+    color: var(--pb-color-danger);
+}
+
+/* A file input behind a button-looking label. */
+.pb-file-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.pb-file-button:focus-within {
+    box-shadow: var(--pb-focus-ring);
+}
+
+.pb-file {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.pb-error {
+    color: var(--pb-color-danger);
+    font-size: 0.875rem;
+}
+
+.pb-notice {
+    margin: 0;
+    color: var(--pb-color-muted);
+    font-size: 0.875rem;
+}
+
+.pb-loading {
+    display: none;
+    color: var(--pb-color-muted);
+    font-size: 0.875rem;
+}
+
+.pb-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    border: 0;
+    white-space: nowrap;
+}
+
+/* Left / right choice (image + text) */
+
+.pb-segmented {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    overflow: hidden;
+}
+
+.pb-segmented-option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 2rem;
+    padding: 0 var(--pb-space-3);
+    background: var(--pb-color-input);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pb-segmented-option + .pb-segmented-option {
+    border-left: 1px solid var(--pb-color-border);
+}
+
+.pb-segmented-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.pb-segmented-option:has(:checked) {
+    background: var(--pb-color-accent);
+    color: var(--pb-color-on-accent);
+}
+
+.pb-segmented-option:has(:focus-visible) {
+    box-shadow: inset var(--pb-focus-ring);
+}
+
+/* Image field: the container query makes the same layout work in a narrow image + text column. */
+
+.pb-image-field {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-3);
+    min-width: 0;
+}
+
+.pb-preview-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--pb-radius-card);
+    background: var(--pb-color-placeholder);
+    color: var(--pb-color-muted);
+}
+
+.pb-preview {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pb-processing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pb-space-1);
+    font-size: 0.8125rem;
+}
+
+.pb-processing svg {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.pb-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 160px;
+    box-sizing: border-box;
+    padding: var(--pb-space-3);
+    border: 2px dashed var(--pb-color-border);
+    border-radius: var(--pb-radius-card);
+    background: var(--pb-color-input);
+    text-align: center;
+}
+
+.pb-dropzone-icon {
+    color: var(--pb-color-accent);
+}
+
+.pb-dropzone-icon svg {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.pb-dropzone-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.pb-dropzone-hint {
+    color: var(--pb-color-muted);
+    font-size: 0.8125rem;
+}
+
+.pb-dropzone-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--pb-space-2);
+    margin-top: var(--pb-space-1);
+}
+
+.pb-meta-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 140px;
+    gap: 12px;
+}
+
+.pb-meta-row--2 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+@container (max-width: 34rem) {
+    .pb-meta-row,
+    .pb-meta-row--2 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.pb-file-name {
+    word-break: break-all;
+    font-size: 0.875rem;
+}
+
+/* Image + text editor: image and text side by side, the image column follows imagePosition. */
+
+.pb-image-text-edit {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--pb-space-4);
+    align-items: start;
+}
+
+.pb-image-text-edit--right .pb-image-text-edit-image {
+    order: 2;
+}
+
+.pb-image-text-edit-image,
+.pb-image-text-edit-text {
+    min-width: 0;
+}
+
+/* Trix */
+
+.pb-trix-toolbar {
+    display: block;
+    border: 1px solid var(--pb-color-border);
+    border-bottom: 0;
+    border-radius: var(--pb-radius) var(--pb-radius) 0 0;
+    background: var(--pb-color-toolbar);
+    padding: 4px;
+}
+
+.pb-trix-toolbar .trix-button-row {
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 2px;
+    overflow: visible;
+}
+
+.pb-trix-toolbar .trix-button-group {
+    display: flex;
+    gap: 2px;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+}
+
+.pb-tool-separator {
+    width: 1px;
+    height: 1.25rem;
+    margin: 0 4px;
+    background: var(--pb-color-hairline);
+}
+
+.pb-trix-toolbar .pb-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    float: none;
+    width: auto;
+    min-width: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 0 6px;
+    border: 0;
+    border-radius: var(--pb-radius);
+    background: transparent;
+    color: var(--pb-color-text);
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pb-trix-toolbar .pb-tool:not(:first-child) {
+    border-left: 0;
+}
+
+.pb-trix-toolbar .pb-tool svg {
+    width: 18px;
+    height: 18px;
+}
+
+.pb-trix-toolbar .pb-tool--italic {
+    font-style: italic;
+}
+
+.pb-trix-toolbar .pb-tool--heading {
+    min-width: 30px;
+    font-size: 0.875rem;
+}
+
+.pb-trix-toolbar .pb-tool:hover {
+    background: var(--pb-color-hairline);
+}
+
+.pb-trix-toolbar .pb-tool.trix-active {
+    background: var(--pb-color-accent);
+    color: var(--pb-color-on-accent);
+}
+
+.pb-trix-toolbar .pb-tool:focus-visible {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+.pb-trix-editor {
+    box-sizing: border-box;
+    display: block;
+    min-height: var(--pb-editor-min-height, 9rem);
+    resize: vertical;
+    overflow: auto;
+    padding: var(--pb-space-2) var(--pb-space-3);
+    border: 1px solid var(--pb-color-border);
+    border-radius: 0 0 var(--pb-radius) var(--pb-radius);
+    background: var(--pb-color-input);
+    color: var(--pb-color-text);
+}
+
+.pb-trix-editor:focus {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+/* Alignment buttons (segmented look, icon-only). */
+
+.pb-align-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    background: var(--pb-color-input);
+    color: var(--pb-color-text);
+    cursor: pointer;
+}
+
+.pb-align-button + .pb-align-button {
+    border-left: 1px solid var(--pb-color-border);
+}
+
+.pb-align-button svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.pb-align-button:hover {
+    background: var(--pb-color-surface-muted);
+}
+
+.pb-align-button--active,
+.pb-align-button--active:hover {
+    background: var(--pb-color-accent);
+    color: var(--pb-color-on-accent);
+}
+
+.pb-align-button:focus-visible {
+    outline: none;
+    box-shadow: inset var(--pb-focus-ring);
+}
+
+/* Trix's own heading/quote look is tiny; show what the rendered text will roughly look like. */
+.pb-trix-editor :where(h1, h2, h3, h4, h5, h6) {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.pb-trix-editor h1 {
+    font-size: 1.75em;
+}
+
+.pb-trix-editor h2 {
+    font-size: 1.5em;
+}
+
+.pb-trix-editor h3 {
+    font-size: 1.25em;
+}
+
+.pb-trix-editor h4 {
+    font-size: 1.1em;
+}
+
+.pb-trix-editor h5,
+.pb-trix-editor h6 {
+    font-size: 1em;
+}
+
+.pb-trix-editor blockquote {
+    margin: 0;
+    padding-left: var(--pb-space-3);
+    border-left: 3px solid var(--pb-color-border);
+    color: var(--pb-color-muted);
+    font-style: italic;
+}
+
+/* wire:sort (Sortable) states */
+
+.pb-item.sortable-ghost {
+    opacity: 0.4;
+}
+
+.pb-item.sortable-chosen > .pb-block-frame,
+.pb-item.sortable-drag > .pb-block-frame {
+    border-color: var(--pb-color-accent);
+    box-shadow: var(--pb-focus-ring);
+}
+
+/* Tailwind's preflight resets list markers; show bullets/numbers while editing, like the rendered text. */
+.pb-trix-editor ul,
+.pb-trix-editor ol {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.pb-trix-editor ul {
+    list-style: disc outside;
+}
+
+.pb-trix-editor ol {
+    list-style: decimal outside;
+}
+
+.pb-trix-editor li {
+    display: list-item;
+}
+
+/* Quote block: a hint of the rendered pull quote (accent bar, big mark, serif text). */
+
+.pb-quote-edit {
+    position: relative;
+    padding-left: var(--pb-space-4);
+    border-left: 6px solid var(--pb-quote-block-accent, var(--pb-color-accent));
+}
+
+.pb-quote-edit::before {
+    content: "\201C";
+    position: absolute;
+    top: -0.25rem;
+    right: var(--pb-space-2);
+    color: var(--pb-quote-block-accent, var(--pb-color-accent));
+    font-family: var(--pb-quote-block-font, Georgia, "Times New Roman", serif);
+    font-size: 3.5rem;
+    line-height: 1;
+    opacity: 0.25;
+    pointer-events: none;
+}
+
+.pb-quote-input {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 5.5rem;
+    padding: var(--pb-space-2) var(--pb-space-3);
+    border: 1px solid var(--pb-color-border);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-input);
+    color: var(--pb-color-text);
+    font-family: var(--pb-quote-block-font, Georgia, "Times New Roman", serif);
+    font-size: 1.25rem;
+    font-style: italic;
+    font-weight: 600;
+    line-height: 1.4;
+    resize: vertical;
+    field-sizing: content;
+}
+
+.pb-quote-input:focus {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+/* Gallery block: slideshow switch and one card per image slot. */
+.pb-gallery-edit {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-3);
+}
+
+.pb-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pb-space-2);
+    cursor: pointer;
+    color: var(--pb-color-text);
+}
+
+.pb-switch-input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--pb-color-accent);
+}
+
+.pb-switch-input:focus-visible {
+    outline: none;
+    box-shadow: var(--pb-focus-ring);
+}
+
+/* 4-5 cards per row in a normal editor width, the fields sit below each preview (the image field stacks them in a narrow card). */
+.pb-gallery-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: var(--pb-space-3);
+    align-items: start;
+}
+
+.pb-gallery-item {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--pb-space-2);
+    border: 1px solid var(--pb-color-hairline);
+    border-radius: var(--pb-radius);
+    background: var(--pb-color-surface);
+    padding: var(--pb-space-3);
+}
+
+.pb-gallery-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pb-space-2);
+}
+
+.pb-gallery-item-title {
+    color: var(--pb-color-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.pb-gallery-item-actions {
+    display: flex;
+    gap: var(--pb-space-1);
+}
+
+.pb-gallery-footer {
+    align-items: center;
+}
+
+.pb-gallery-count {
+    color: var(--pb-color-muted);
+    font-size: 0.8125rem;
+}
+
+.pb-link-button {
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--pb-color-accent, currentColor);
+    font-size: 0.8125rem;
+    text-decoration: underline;
+    cursor: pointer;
+}

@@ -1,59 +1,42 @@
-@props(['block', 'index'])
+@props(['block', 'index', 'context' => []])
 
-<div class="grid gap-4 md:grid-cols-2">
-    <div class="space-y-2">
-        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.imagePosition" class="rounded-md border-slate-300 text-sm">
-            <option value="left">{{ __('Image position') }}: {{ __('Left') }}</option>
-            <option value="right">{{ __('Image position') }}: {{ __('Right') }}</option>
-        </select>
+@php
+    $position = ($block['data']['imagePosition'] ?? 'left') === 'right' ? 'right' : 'left';
+    $positionName = 'pb-position-'.$block['id'];
+@endphp
 
-        @if(filled($block['data']['imageUrl'] ?? null))
-            <img src="{{ $block['data']['imageUrl'] }}" alt="" class="max-h-48 rounded-md border border-slate-200" />
+<div class="pb-block-body">
+    <div class="pb-block-options">
+        <fieldset class="pb-segmented">
+            <legend class="pb-visually-hidden">{{ __('Image position') }}</legend>
+            @foreach(['left' => __('Image left'), 'right' => __('Image right')] as $value => $text)
+                <label class="pb-segmented-option">
+                    <input type="radio" name="{{ $positionName }}" value="{{ $value }}" wire:model.live="pageBuilderBlocks.{{ $index }}.data.imagePosition" class="pb-segmented-input" />
+                    <span>{{ $text }}</span>
+                </label>
+            @endforeach
+        </fieldset>
+
+        @if(! empty($context['alignment']))
+            @include('pagebuilder::components.align-tools', ['blockId' => $block['id']])
         @endif
-
-        <div wire:loading.flex wire:target="pageBuilderUploads.{{ $block['id'] }}" class="hidden items-center text-sm text-slate-500">
-            {{ __('Uploading...') }}
-        </div>
-
-        <input type="file" accept="image/*" wire:model="pageBuilderUploads.{{ $block['id'] }}" class="block w-full text-sm" />
-        @error('pageBuilderUploads.'.$block['id'])
-            <span class="text-sm text-red-600">{{ $message }}</span>
-        @enderror
     </div>
 
-    <div class="space-y-2">
-        <select wire:model.live="pageBuilderBlocks.{{ $index }}.data.align" class="rounded-md border-slate-300 text-sm">
-            <option value="left">{{ __('Left') }}</option>
-            <option value="center">{{ __('Center') }}</option>
-            <option value="right">{{ __('Right') }}</option>
-            <option value="justify">{{ __('Justify') }}</option>
-        </select>
+    @error('pageBuilderBlocks.'.$index.'.data.imagePosition')
+        <span class="pb-error">{{ $message }}</span>
+    @enderror
 
-        <div
-            x-data="{
-                content: @entangle('pageBuilderBlocks.'.$index.'.data.html'),
-                initTrix() {
-                    const trix = this.$refs.trix;
-                    trix.addEventListener('trix-initialize', () => {
-                        if (this.content) trix.editor.loadHTML(this.content);
-                    });
-                    trix.addEventListener('trix-change', () => {
-                        this.content = trix.innerHTML;
-                    });
-                },
-            }"
-            x-init="initTrix()"
-            wire:ignore
-        >
-            <input id="pagebuilder-image-text-{{ $block['id'] }}" type="hidden">
-            <trix-editor
-                x-ref="trix"
-                input="pagebuilder-image-text-{{ $block['id'] }}"
-                class="trix-content block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"
-            ></trix-editor>
+    <div class="pb-image-text-edit {{ $position === 'right' ? 'pb-image-text-edit--right' : '' }}">
+        <div class="pb-image-text-edit-image">
+            @include('pagebuilder::components.image-field', ['block' => $block, 'index' => $index, 'context' => $context, 'urlKey' => 'imageUrl'])
         </div>
-        @error('pageBuilderBlocks.'.$index.'.data.html')
-            <span class="text-sm text-red-600">{{ $message }}</span>
-        @enderror
+
+        <div class="pb-image-text-edit-text">
+            @include('pagebuilder::components.rich-text', ['blockId' => $block['id'], 'label' => __('Image + Text :n', ['n' => $index + 1]), 'alignable' => ! empty($context['alignment'])])
+
+            @error('pageBuilderBlocks.'.$index.'.data.html')
+                <span class="pb-error">{{ $message }}</span>
+            @enderror
+        </div>
     </div>
 </div>

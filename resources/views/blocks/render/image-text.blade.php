@@ -1,14 +1,15 @@
-@props(['data'])
+@props(['data', 'media' => null])
 
+{{-- Image beside text; stacks on narrow screens. The image side goes through the same `pagebuilder.image.render_view` hook as the image block. --}}
 @php
     $position = $data['imagePosition'] ?? 'left';
-    $align = $data['align'] ?? 'left';
+    $align = config('pagebuilder.alignment', true) ? ($data['align'] ?? 'left') : null;
 @endphp
-<div class="pagebuilder-block pagebuilder-block--image-text flex flex-col gap-6 md:flex-row {{ $position === 'right' ? 'md:flex-row-reverse' : '' }}">
-    <div class="md:w-1/2">
-        <img src="{{ $data['imageUrl'] ?? '' }}" alt="" loading="lazy" class="w-full rounded-md" />
+<div class="pb-block pb-block--image-text {{ $position === 'right' ? 'pb-block--image-right' : '' }}">
+    <div class="pb-image-text-media">
+        @include('pagebuilder::blocks.render.partials.image', ['data' => $data, 'media' => $media, 'urlKey' => 'imageUrl', 'figureClass' => 'pb-figure'])
     </div>
-    <div class="prose max-w-none text-{{ $align }} md:w-1/2">
+    <div class="pb-image-text-body pb-prose {{ $align ? 'pb-align-'.$align : '' }}">
         {!! $data['html'] ?? '' !!}
     </div>
 </div>

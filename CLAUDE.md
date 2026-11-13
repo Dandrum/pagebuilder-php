@@ -22,7 +22,7 @@ Everything is exercised through `composer.json`'s own `require`/`require-dev`.
 - **Block type registry** (`src/Support/BlockRegistry.php`, a singleton built from
   `config('pagebuilder.blocks')`) — each block type is a class implementing
   `src/Contracts/BlockType.php`. New block types are added via config, not by forking the
-  package. The four shipped types live in `src/Blocks/`.
+  package. The six shipped types live in `src/Blocks/`.
 - **Document model** (`src/Support/PageBuilderDocument.php`) — the only place that knows the
   on-disk `{version, blocks}` JSON shape; encodes/decodes it.
 - **Two Blade entry points**: `<x-pagebuilder::editor>` (admin-facing editor UI) and
@@ -36,7 +36,7 @@ Everything is exercised through `composer.json`'s own `require`/`require-dev`.
 See `.claude/rules/architecture.md` for the full block lifecycle (insert/duplicate/remove/
 move-up/move-down/upload/validate/save) and how to add a block type. See `.claude/rules/laravel.md`
 for code style and the Blade/Alpine/Trix conventions used in the views. See
-`.claude/rules/testing.md` for the current (pre-test-suite) state of testing this package.
+`.claude/rules/testing.md` for the Testbench suite (`vendor/bin/phpunit`).
 
 ## Development Setup
 
@@ -71,14 +71,14 @@ for f in $(find src config -name "*.php"); do php -l "$f"; done
   — mirrors the translation convention of this package's primary consumer, `dandrum/DotaLan`.
 - No sidequests: a change to one block type or view should not ripple into unrelated block types
   unless the task actually requires it.
-- The host app is expected to already load **Alpine.js** and **Trix** in its own asset bundle —
-  this package ships no JS/CSS build step of its own and must not grow one just to avoid that
-  requirement.
+- Alpine comes with Livewire; the host must load **Trix** (the heading2-6 block attributes are registered by `rich-text.blade.php` itself) in its own asset bundle. The package ships
+  no JS and no build step, only plain CSS files (`resources/css/pagebuilder-*.css`, `--pb-*`
+  custom properties) the host imports.
 
 ## Package Consumers
 
-No host app lives in this repo. The only known consumer is `dandrum/DotaLan`
-(`backend_new/`) — not yet wired in; integrating this package into `Article`/`Page` there is a
-separate, later change (GitLab issue #166 covers the package build only). Before changing the
+No host app lives in this repo. Consumers: `dandrum/DotaLan` (`backend_new/`, not yet wired in) and
+the Newspaper app (Beitraege block editor, GitLab #18, branch `newspaper-18-block-editor`; media
+library integration via `ImageMediaResolver`, picker events and deferred uploads). Before changing the
 JSON schema, the trait's public method signatures, or the shape of `config/pagebuilder.php`,
 check that consumer rather than assuming nothing depends on current behavior.
