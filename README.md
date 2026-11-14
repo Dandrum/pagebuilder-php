@@ -7,6 +7,10 @@ any Livewire component without forcing a base class.
 Requires Laravel 11-13 and Livewire 3-4 (PHP 8.2+). Drag & drop needs Livewire 4 (`wire:sort`);
 on Livewire 3 the grip handle does nothing and the move up/down buttons remain.
 
+> **Integrating into a host app (for humans and Claude Code):** read
+> [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md) - checklist, database column, config, component
+> code, media-library/picker contract, rendering, sanitizing, tests and troubleshooting.
+
 ## Install
 
 As a VCS repository (not published on Packagist), same as `dandrum/datatable`:
