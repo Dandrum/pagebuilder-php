@@ -82,3 +82,10 @@ the Newspaper app (Beitraege block editor, GitLab #18, branch `newspaper-18-bloc
 library integration via `ImageMediaResolver`, picker events and deferred uploads). Before changing the
 JSON schema, the trait's public method signatures, or the shape of `config/pagebuilder.php`,
 check that consumer rather than assuming nothing depends on current behavior.
+
+## Integration guide for host apps
+
+`docs/IMPLEMENTATION_GUIDE.md` is the single document a host-app Claude reads to integrate this package (install, DB column,
+config, component code, picker/upload contract, rendering, sanitizing, tests, troubleshooting). **Keep it in sync** whenever
+you change the trait's public/overridable methods, the config shape, the JSON schema, the events
+(`pagebuilder-pick-image` / `pagebuilder-image-picked`), the render hooks or the CSS variables.
