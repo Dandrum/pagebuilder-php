@@ -16,7 +16,8 @@
 
     <div class="pb-list" wire:sort="sortPageBuilderBlock">
         @foreach($blocks as $index => $block)
-            @continue(! $registry->has($block['type']))
+            {{-- A stray Livewire update (e.g. a blur for a block that was just removed) can leave a half-built entry without type/id. --}}
+            @continue(! is_array($block) || ! is_string($block['type'] ?? null) || ! is_string($block['id'] ?? null) || ! $registry->has($block['type']))
 
             @php
                 $blockType = $registry->get($block['type']);
